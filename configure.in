@@ -1,0 +1,12 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.61)
+
+AC_INIT([libmkv], [0.01], [saintdev@gmail.com])
+
+AM_INIT_AUTOMAKE([1.10 foreign])
+
+AC_PROG_CC
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
