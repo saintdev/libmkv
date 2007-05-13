@@ -28,6 +28,8 @@
 
 #include <stdio.h>
 #include <getopt.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -42,7 +44,9 @@ int main( int argc, char ** argv )
 {
     mk_Writer * mkvfile;
     int c, option_index = 0;
-    static char * output = NULL;
+    static char *output = NULL;
+    static char *in_video = NULL;
+    static char *in_audio = NULL;
     
     for( ;; )
     {
@@ -50,11 +54,13 @@ int main( int argc, char ** argv )
         {
             { "help",        no_argument,       NULL,    'h' },
             { "output",      required_argument, NULL,    'o' },
+            { "audio",       required_argument, NULL,    'a' },
+            { "video",       required_argument, NULL,    'v' },
             { 0, 0, 0, 0 }
         };
 
         c = getopt_long( argc, argv,
-                         "ho:",
+                         "ho:a:v:",
                          long_options, &option_index );
         if( c < 0 )
         {
@@ -67,25 +73,39 @@ int main( int argc, char ** argv )
                 printf("Got output filename: %s\n", optarg);
                 output = strdup( optarg );
                 break;
+            case 'v':
+                printf("Got input video track: %s\n", optarg);
+                in_video = strdup( optarg );
+                break;
+            case 'a':
+                printf("Got input audio track: %s\n", optarg);
+                in_audio = strdup( optarg );
+                break;
             default:
                 fprintf( stderr, "Unknown option (%s)\n", argv[optind] );
             case 'h':
                 show_help(argv);
-                return 0;
+                return 1;
         }
-    }
-
-    mkvfile = malloc( sizeof(mk_Writer) );
-    if (!mkvfile)
-    {
-        fprintf(stderr, "Unable to allocate memory for mk_Writer struct!");
-        return 0;
     }
 
     mkvfile = mk_createWriter( output );
 
+/*    mk_writeHeader(mkvfile, "test.c",
+                   MKV_CODEC_X264,
+                   codecPrivate, sizeof( codecPrivate ),
+                   default_frame_duration,
+                   timescale,
+                   width, height,
+                   d_width, d_height );
+*/
     mk_close( mkvfile );
-    free( mkvfile );
+
+    free( output );
+    free( in_video );
+    free( in_audio );
+
+    return 0;
 }
 
 show_help(char ** argv)

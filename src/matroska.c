@@ -34,38 +34,11 @@
 #include <inttypes.h>
 #endif
 
-#include "matroska.h"
+#include "libmkv.h"
 
 #define CLSIZE    1048576
 #define CHECK(x)  do { if ((x) < 0) return -1; } while (0)
 
-struct mk_Context {
-  struct mk_Context *next, **prev, *parent;
-  struct mk_Writer  *owner;
-  unsigned      id;
-
-  void          *data;
-  unsigned      d_cur, d_max;
-};
-
-typedef struct mk_Context mk_Context;
-
-struct mk_Writer {
-  FILE            *fp;
-
-  unsigned        duration_ptr;
-
-  mk_Context          *root, *cluster, *frame;
-  mk_Context          *freelist;
-  mk_Context          *actlist;
-
-  int64_t         def_duration;
-  int64_t         timescale;
-  int64_t         cluster_tc_scaled;
-  int64_t         frame_tc, prev_frame_tc_scaled, max_frame_tc;
-
-  char            wrote_header, in_frame, keyframe;
-};
 
 static mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id) {
   mk_Context  *c;

@@ -27,7 +27,36 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct mk_Writer mk_Writer;
+
+typedef struct mk_Context_s mk_Context;
+typedef struct mk_Writer_s mk_Writer;
+
+struct mk_Context_s {
+    mk_Context *next, **prev, *parent;
+    mk_Writer  *owner;
+    unsigned      id;
+
+    void          *data;
+    unsigned      d_cur, d_max;
+};
+
+
+struct mk_Writer_s {
+    FILE            *fp;
+
+    unsigned        duration_ptr;
+
+    mk_Context          *root, *cluster, *frame;
+    mk_Context          *freelist;
+    mk_Context          *actlist;
+
+    int64_t         def_duration;
+    int64_t         timescale;
+    int64_t         cluster_tc_scaled;
+    int64_t         frame_tc, prev_frame_tc_scaled, max_frame_tc;
+
+    char            wrote_header, in_frame, keyframe;
+};
 
 mk_Writer *mk_createWriter( const char *filename );
 
