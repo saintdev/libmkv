@@ -32,4 +32,24 @@ struct mk_Context_s {
     unsigned      d_cur, d_max;
 };
 
+struct mk_Writer_s {
+    FILE            *fp;
+
+    unsigned        duration_ptr;
+
+    mk_Context          *root, *cluster, *frame, *tracks;
+    mk_Context          *freelist;
+    mk_Context          *actlist;
+
+    int64_t         def_duration;
+    int64_t         timescale;
+    int64_t         cluster_tc_scaled;
+
+    char            wrote_header, wrote_tracks;
+    unsigned        num_tracks;
+    
+    int64_t         frame_tc, prev_frame_tc_scaled, max_frame_tc;
+    char            in_frame, keyframe;
+};
+
 #endif

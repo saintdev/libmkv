@@ -60,35 +60,53 @@ extern "C" {
 
 typedef struct mk_Context_s mk_Context;
 typedef struct mk_Writer_s mk_Writer;
+typedef struct mk_TrackConfig_s mk_TrackConfig;
+typedef struct mk_VideoConfig_s mk_VideoConfig;
+typedef struct mk_AudioConfig_s mk_AudioConfig;
 
-struct mk_Writer_s {
-    FILE            *fp;
+struct mk_TrackConfig_s {
+    unsigned    trackUID;           // Optional: Unique identifier for the track.
+    unsigned    trackType;          // Required: 1 = Video, 2 = Audio.
+    char        flagEnabled;        // Optional: Set 1 if the track is used (Default: enabled)
+    char        flagDefault;
+    char        flagForced;         // Optional: Set 1 if the track MUST be shown during playback (Default: disabled)
+    char        flagLacing;         // Required: Set 1 if the track may contain blocks using lacing.
+    unsigned    minCache;           // Optional: See Matroska spec. (Default: cache disabled)
+    unsigned    maxCache;
+    int64_t     defaultDuration;    // Optional: Number of nanoseconds per frame.
+    char        *name;
+    char        *language;
+    char        *codecID;           // Required: See codecs above.
+    void        *codecPrivate;
+    unsigned    codecPrivateSize;
+    char        *codecName;
+    mk_VideoConfig *video;
+    mk_AudioConfig *audio;
+};
 
-    unsigned        duration_ptr;
+struct mk_VideoConfig_s {
+    char    flagInterlaced;
+    unsigned width;
+    unsigned height;
+    unsigned d_width;
+    unsigned d_height;
+};
 
-    mk_Context          *root, *cluster, *frame;
-    mk_Context          *freelist;
-    mk_Context          *actlist;
-
-    int64_t         def_duration;
-    int64_t         timescale;
-    int64_t         cluster_tc_scaled;
-    int64_t         frame_tc, prev_frame_tc_scaled, max_frame_tc;
-
-    char            wrote_header, in_frame, keyframe;
+struct mk_AudioConfig_s {
+    float   samplingFreq;
+    unsigned    channels;
+    unsigned    bitDepth;
 };
 
 mk_Writer *mk_createWriter( const char *filename );
 
-int  mk_writeHeader( mk_Writer *w, const char *writingApp,
-                     const char *codecID,
-                     const void *codecPrivate, unsigned codecPrivateSize,
+int   mk_writeHeader(mk_Writer *w, const char *writingApp,
                      int64_t default_frame_duration,
-                     int64_t timescale,
-                     unsigned width, unsigned height,
-                     unsigned d_width, unsigned d_height );
+                     int64_t timescale );
 
-int  mk_startFrame( mk_Writer *w );
+int  mk_addTrack(mk_Writer *w, mk_TrackConfig *tc);
+
+int  mk_startFrame( mk_Writer *w, int trackID );
 int  mk_addFrameData( mk_Writer *w, const void *data, unsigned size );
 int  mk_setFrameFlags( mk_Writer *w, int64_t timestamp, int keyframe );
 int  mk_close( mk_Writer *w );

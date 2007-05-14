@@ -311,14 +311,10 @@ mk_Writer *mk_createWriter(const char *filename) {
 }
 
 int   mk_writeHeader(mk_Writer *w, const char *writingApp,
-             const char *codecID,
-             const void *codecPrivate, unsigned codecPrivateSize,
-             int64_t default_frame_duration,
-             int64_t timescale,
-             unsigned width, unsigned height,
-             unsigned d_width, unsigned d_height)
+                    int64_t default_frame_duration,
+                    int64_t timescale)
 {
-  mk_Context  *c, *ti, *v;
+  mk_Context  *c;
 
   if (w->wrote_header)
     return -1;
@@ -350,7 +346,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp,
   CHECK(mk_writeFloat(c, 0x4489, 0));
   w->duration_ptr = c->d_cur - 4;
   CHECK(mk_closeContext(c, &w->duration_ptr));
-
+/*
   if ((c = mk_createContext(w, w->root, 0x1654ae6b)) == NULL) // tracks
     return -1;
   if ((ti = mk_createContext(w, c, 0xae)) == NULL) // TrackEntry
@@ -378,7 +374,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp,
   CHECK(mk_closeContext(c, 0));
 
   CHECK(mk_flushContextData(w->root));
-
+*/
   w->wrote_header = 1;
 
   return 0;
@@ -393,7 +389,7 @@ static int mk_closeCluster(mk_Writer *w) {
   return 0;
 }
 
-int   mk_flushFrame(mk_Writer *w) {
+int   mk_flushFrame(mk_Writer *w, int trackID) {
   int64_t   delta, ref = 0;
   unsigned  fsize, bgsize;
   unsigned char c_delta_flags[3];
@@ -427,7 +423,7 @@ int   mk_flushFrame(mk_Writer *w) {
   CHECK(mk_writeSize(w->cluster, bgsize));
   CHECK(mk_writeID(w->cluster, 0xa1)); // Block
   CHECK(mk_writeSize(w->cluster, fsize + 4));
-  CHECK(mk_writeSize(w->cluster, 1)); // track number
+  CHECK(mk_writeSize(w->cluster, trackID)); // track number
 
   c_delta_flags[0] = delta >> 8;
   c_delta_flags[1] = delta;
@@ -449,8 +445,8 @@ int   mk_flushFrame(mk_Writer *w) {
   return 0;
 }
 
-int   mk_startFrame(mk_Writer *w) {
-  if (mk_flushFrame(w) < 0)
+int   mk_startFrame(mk_Writer *w, int trackID) {
+  if (mk_flushFrame(w, trackID) < 0)
     return -1;
 
   w->in_frame = 1;
@@ -485,8 +481,8 @@ int   mk_addFrameData(mk_Writer *w, const void *data, unsigned size) {
 
 int   mk_close(mk_Writer *w) {
   int   ret = 0;
-  if (mk_flushFrame(w) < 0 || mk_closeCluster(w) < 0)
-    ret = -1;
+//  if (mk_flushFrame(w) < 0 || mk_closeCluster(w) < 0)   //FIXME
+//    ret = -1;
   if (w->wrote_header) {
     fseek(w->fp, w->duration_ptr, SEEK_SET);
     if (mk_writeFloatRaw(w->root, (float)((double)(w->max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
@@ -499,3 +495,66 @@ int   mk_close(mk_Writer *w) {
   return ret;
 }
 
+int   mk_addTrack(mk_Writer *w, mk_TrackConfig *tc)
+{
+    mk_Context  *c, *ti, *v;
+    if (!w->wrote_tracks)
+    {
+        if ((w->tracks = mk_createContext(w, w->root, 0x1654ae6b)) == NULL) // tracks
+            return -1;
+        w->num_tracks = 1;
+        w->wrote_tracks = 1;
+    }
+    if ((ti = mk_createContext(w, c, 0xae)) == NULL) // TrackEntry
+        return -1;
+    CHECK(mk_writeUInt(ti, 0xd7, w->num_tracks)); // TrackNumber
+    if (tc->trackUID)
+        CHECK(mk_writeUInt(ti, 0x73c5, tc->trackUID)); // TrackUID
+    else
+        CHECK(mk_writeUInt(ti, 0x73c5, w->num_tracks));
+    CHECK(mk_writeUInt(ti, 0x83, tc->trackType)); // TrackType
+    CHECK(mk_writeUInt(ti, 0x9c, tc->flagLacing)); // FlagLacing
+    CHECK(mk_writeStr(ti, 0x86, tc->codecID)); // CodecID
+    if (tc->codecPrivateSize)
+        CHECK(mk_writeBin(ti, 0x63a2, tc->codecPrivate, tc->codecPrivateSize)); // CodecPrivate
+    if (w->def_duration)
+        CHECK(mk_writeUInt(ti, 0x23e383, w->def_duration)); // DefaultDuration
+    if (tc->language)
+        CHECK(mk_writeStr(ti, 0x22b59c, tc->language));
+    switch (tc->trackType)
+    {
+        case '1':       // Video
+            if ((v = mk_createContext(w, ti, 0xe0)) == NULL)
+                return -1;
+            CHECK(mk_writeUInt(v, 0xb0, tc->video->width));
+            CHECK(mk_writeUInt(v, 0xba, tc->video->height));
+            CHECK(mk_writeUInt(v, 0x54b0, tc->video->d_width));
+            CHECK(mk_writeUInt(v, 0x54ba, tc->video->d_height));
+            break;
+        case '2':       // Audio
+            if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
+                return -1;
+            CHECK(mk_writeFloat(v, 0xb5, tc->audio->samplingFreq));
+            CHECK(mk_writeUInt(v, 0x9f, tc->audio->channels));
+            if (tc->audio->bitDepth)
+                CHECK(mk_writeUInt(v, 0x6264, tc->audio->bitDepth));
+            break;
+        default:
+            return -1;
+    }
+    CHECK(mk_closeContext(v, 0));
+
+    CHECK(mk_closeContext(ti, 0));
+
+    return w->num_tracks++;
+}
+
+int mk_finalizeHeader(mk_Writer *w)
+{
+    if (w->wrote_tracks)
+        CHECK(mk_closeContext(w->tracks, 0));
+    
+    CHECK(mk_flushContextData(w->root));
+
+    return 0;
+}
