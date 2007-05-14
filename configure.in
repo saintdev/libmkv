@@ -27,5 +27,8 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset strdup])
 
-AC_CONFIG_FILES([Makefile src/Makefile test/Makefile])
+AC_CONFIG_FILES([Makefile
+                 src/Makefile
+                 include/Makefile
+                 test/Makefile])
 AC_OUTPUT
