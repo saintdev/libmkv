@@ -24,22 +24,42 @@
 #ifndef _LIBMKV_H
 #define _LIBMKV_H 1
 
+/* Video codecs */
+#define MKV_VCODEC_MPEG1    "V_MPEG1"
+#define MKV_VCODEC_MPEG2    "V_MPEG2"
+#define MKV_VCODEC_THEORA   "V_THEORA"
+#define MKV_VCODEC_SNOW     "V_SNOW"
+#define MKV_VCODEC_MP4ASP   "V_MPEG4/ISO/ASP"
+#define MKV_VCODEC_MP4AVC   "V_MPEG4/ISO/AVC"
+
+/* Audio codecs */
+#define MKV_ACODEC_AC3      "A_AC3"
+#define MKV_ACODEC_MP3      "A_MPEG/L3"
+#define MKV_ACODEC_MP2      "A_MPEG/L2"
+#define MKV_ACODEC_MP1      "A_MPEG/L1"
+#define MKV_ACODEC_DTS      "A_DTS"
+#define MKV_ACODEC_PCMINTLE "A_PCM/INT/LIT"
+#define MKV_ACODEC_PCMFLTLE "A_PCM/FLOAT/IEEE"
+#define MKV_ACODEC_TTA1     "A_TTA1"
+#define MKV_ACODEC_WAVPACK  "A_WAVPACK4"
+#define MKV_ACODEC_VORBIS   "A_VORBIS"
+#define MKV_ACODEC_FLAC     "A_FLAC"
+#define MKV_ACODEC_AAC      "A_AAC"
+
+/* Subtitles */
+#define MKV_SUBTITLE_ASCII  "S_TEXT/ASCII"
+#define MKV_SUBTITLE_UTF8   "S_TEXT/UTF8"
+#define MKV_SUBTITLE_SSA    "S_TEXT/SSA"
+#define MKV_SUBTITLE_ASS    "S_TEXT/ASS"
+#define MKV_SUBTITLE_USF    "S_TEXT/USF"
+#define MKV_SUBTITLE_VOBSUB "S_VOBSUB"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct mk_Context_s mk_Context;
 typedef struct mk_Writer_s mk_Writer;
-
-struct mk_Context_s {
-    mk_Context *next, **prev, *parent;
-    mk_Writer  *owner;
-    unsigned      id;
-
-    void          *data;
-    unsigned      d_cur, d_max;
-};
-
 
 struct mk_Writer_s {
     FILE            *fp;
