@@ -311,16 +311,20 @@ mk_Writer *mk_createWriter(const char *filename) {
 }
 
 int   mk_writeHeader(mk_Writer *w, const char *writingApp,
+                     mk_TrackConfig *tcs[], int num_tracks,
                     int64_t default_frame_duration,
                     int64_t timescale)
 {
   mk_Context  *c;
+  mk_Track    *tk;
+  int   i;
 
   if (w->wrote_header)
     return -1;
 
   w->timescale = timescale;
   w->def_duration = default_frame_duration;
+  w->num_tracks = num_tracks;
 
   if ((c = mk_createContext(w, w->root, 0x1a45dfa3)) == NULL) // EBML
     return -1;
@@ -346,35 +350,28 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp,
   CHECK(mk_writeFloat(c, 0x4489, 0));
   w->duration_ptr = c->d_cur - 4;
   CHECK(mk_closeContext(c, &w->duration_ptr));
-/*
+
   if ((c = mk_createContext(w, w->root, 0x1654ae6b)) == NULL) // tracks
     return -1;
-  if ((ti = mk_createContext(w, c, 0xae)) == NULL) // TrackEntry
-    return -1;
-  CHECK(mk_writeUInt(ti, 0xd7, 1)); // TrackNumber
-  CHECK(mk_writeUInt(ti, 0x73c5, 1)); // TrackUID
-  CHECK(mk_writeUInt(ti, 0x83, 1)); // TrackType
-  CHECK(mk_writeUInt(ti, 0x9c, 0)); // FlagLacing
-  CHECK(mk_writeStr(ti, 0x86, codecID)); // CodecID
-  if (codecPrivateSize)
-    CHECK(mk_writeBin(ti, 0x63a2, codecPrivate, codecPrivateSize)); // CodecPrivate
-  if (default_frame_duration)
-    CHECK(mk_writeUInt(ti, 0x23e383, default_frame_duration)); // DefaultDuration
+  
+  for (i = 0; i < w->num_tracks; i++)
+  {
+    tcs[i]->track = malloc( sizeof(mk_Track) );
+    if (tcs[i]->track == NULL)
+        return -1;
+    tcs[i]->track->track_id = i + 1;
+    if (i == 0)
+        w->first_track = tcs[i]->track;
+    if (mk_addTrack(w, c, tcs[i]))
+      return -1;
+  }
 
-  if ((v = mk_createContext(w, ti, 0xe0)) == NULL) // Video
-    return -1;
-  CHECK(mk_writeUInt(v, 0xb0, width));
-  CHECK(mk_writeUInt(v, 0xba, height));
-  CHECK(mk_writeUInt(v, 0x54b0, d_width));
-  CHECK(mk_writeUInt(v, 0x54ba, d_height));
-  CHECK(mk_closeContext(v, 0));
-
-  CHECK(mk_closeContext(ti, 0));
-
+  tcs[i]->track->next = NULL;
+  
   CHECK(mk_closeContext(c, 0));
 
   CHECK(mk_flushContextData(w->root));
-*/
+
   w->wrote_header = 1;
 
   return 0;
@@ -389,7 +386,7 @@ static int mk_closeCluster(mk_Writer *w) {
   return 0;
 }
 
-int   mk_flushFrame(mk_Writer *w, int trackID) {
+int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   int64_t   delta, ref = 0;
   unsigned  fsize, bgsize;
   unsigned char c_delta_flags[3];
@@ -423,7 +420,7 @@ int   mk_flushFrame(mk_Writer *w, int trackID) {
   CHECK(mk_writeSize(w->cluster, bgsize));
   CHECK(mk_writeID(w->cluster, 0xa1)); // Block
   CHECK(mk_writeSize(w->cluster, fsize + 4));
-  CHECK(mk_writeSize(w->cluster, trackID)); // track number
+  CHECK(mk_writeSize(w->cluster, track->track_id)); // track number
 
   c_delta_flags[0] = delta >> 8;
   c_delta_flags[1] = delta;
@@ -445,8 +442,8 @@ int   mk_flushFrame(mk_Writer *w, int trackID) {
   return 0;
 }
 
-int   mk_startFrame(mk_Writer *w, int trackID) {
-  if (mk_flushFrame(w, trackID) < 0)
+int   mk_startFrame(mk_Writer *w, mk_Track *track) {
+  if (mk_flushFrame(w, track) < 0)
     return -1;
 
   w->in_frame = 1;
@@ -480,9 +477,19 @@ int   mk_addFrameData(mk_Writer *w, const void *data, unsigned size) {
 }
 
 int   mk_close(mk_Writer *w) {
-  int   ret = 0;
-//  if (mk_flushFrame(w) < 0 || mk_closeCluster(w) < 0)   //FIXME
-//    ret = -1;
+  int   i, ret = 0;
+  mk_Track  *track;
+  track = w->first_track;
+  
+  for (i = 0; i < w->num_tracks; i++)
+  {
+    if (mk_flushFrame(w, track) < 0)
+      ret = -1;
+    if (track->next != NULL)
+      track = track->next;
+  }
+  if (mk_closeCluster(w) < 0)
+    ret = -1;
   if (w->wrote_header) {
     fseek(w->fp, w->duration_ptr, SEEK_SET);
     if (mk_writeFloatRaw(w->root, (float)((double)(w->max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
@@ -495,23 +502,17 @@ int   mk_close(mk_Writer *w) {
   return ret;
 }
 
-int   mk_addTrack(mk_Writer *w, mk_TrackConfig *tc)
+int   mk_addTrack(mk_Writer *w, mk_Context *tracks, mk_TrackConfig *tc)
 {
-    mk_Context  *c, *ti, *v;
-    if (!w->wrote_tracks)
-    {
-        if ((w->tracks = mk_createContext(w, w->root, 0x1654ae6b)) == NULL) // tracks
-            return -1;
-        w->num_tracks = 1;
-        w->wrote_tracks = 1;
-    }
-    if ((ti = mk_createContext(w, c, 0xae)) == NULL) // TrackEntry
+    mk_Context  *ti, *v;
+    
+    if ((ti = mk_createContext(w, tracks, 0xae)) == NULL) // TrackEntry
         return -1;
-    CHECK(mk_writeUInt(ti, 0xd7, w->num_tracks)); // TrackNumber
+    CHECK(mk_writeUInt(ti, 0xd7, tc->track->track_id)); // TrackNumber
     if (tc->trackUID)
         CHECK(mk_writeUInt(ti, 0x73c5, tc->trackUID)); // TrackUID
     else
-        CHECK(mk_writeUInt(ti, 0x73c5, w->num_tracks));
+        CHECK(mk_writeUInt(ti, 0x73c5, tc->track->track_id));
     CHECK(mk_writeUInt(ti, 0x83, tc->trackType)); // TrackType
     CHECK(mk_writeUInt(ti, 0x9c, tc->flagLacing)); // FlagLacing
     CHECK(mk_writeStr(ti, 0x86, tc->codecID)); // CodecID
@@ -545,16 +546,6 @@ int   mk_addTrack(mk_Writer *w, mk_TrackConfig *tc)
     CHECK(mk_closeContext(v, 0));
 
     CHECK(mk_closeContext(ti, 0));
-
-    return w->num_tracks++;
-}
-
-int mk_finalizeHeader(mk_Writer *w)
-{
-    if (w->wrote_tracks)
-        CHECK(mk_closeContext(w->tracks, 0));
-    
-    CHECK(mk_flushContextData(w->root));
 
     return 0;
 }

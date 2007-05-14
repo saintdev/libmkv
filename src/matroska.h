@@ -23,6 +23,8 @@
 #ifndef _MATROSKA_H
 #define _MATROSKA_H 1
 
+typedef struct mk_Context_s mk_Context;
+
 struct mk_Context_s {
     mk_Context *next, **prev, *parent;
     mk_Writer  *owner;
@@ -37,19 +39,25 @@ struct mk_Writer_s {
 
     unsigned        duration_ptr;
 
-    mk_Context          *root, *cluster, *frame, *tracks;
+    mk_Context          *root, *cluster, *frame;
     mk_Context          *freelist;
     mk_Context          *actlist;
+    mk_Track            *first_track;
 
     int64_t         def_duration;
     int64_t         timescale;
     int64_t         cluster_tc_scaled;
 
-    char            wrote_header, wrote_tracks;
+    char            wrote_header;
     unsigned        num_tracks;
     
     int64_t         frame_tc, prev_frame_tc_scaled, max_frame_tc;
     char            in_frame, keyframe;
+};
+
+struct mk_Track_s {
+    int     track_id;
+    mk_Track *next;
 };
 
 #endif

@@ -58,8 +58,8 @@
 extern "C" {
 #endif
 
-typedef struct mk_Context_s mk_Context;
 typedef struct mk_Writer_s mk_Writer;
+typedef struct mk_Track_s mk_Track;
 typedef struct mk_TrackConfig_s mk_TrackConfig;
 typedef struct mk_VideoConfig_s mk_VideoConfig;
 typedef struct mk_AudioConfig_s mk_AudioConfig;
@@ -82,6 +82,7 @@ struct mk_TrackConfig_s {
     char        *codecName;
     mk_VideoConfig *video;
     mk_AudioConfig *audio;
+    mk_Track       *track;          // Handle for this track.
 };
 
 struct mk_VideoConfig_s {
@@ -101,12 +102,11 @@ struct mk_AudioConfig_s {
 mk_Writer *mk_createWriter( const char *filename );
 
 int   mk_writeHeader(mk_Writer *w, const char *writingApp,
+                     mk_TrackConfig *tracks[], int num_tracks,
                      int64_t default_frame_duration,
                      int64_t timescale );
 
-int  mk_addTrack(mk_Writer *w, mk_TrackConfig *tc);
-
-int  mk_startFrame( mk_Writer *w, int trackID );
+int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData( mk_Writer *w, const void *data, unsigned size );
 int  mk_setFrameFlags( mk_Writer *w, int64_t timestamp, int keyframe );
 int  mk_close( mk_Writer *w );
