@@ -24,6 +24,12 @@
 #ifndef _LIBMKV_H
 #define _LIBMKV_H 1
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#else
+#include <inttypes.h>
+#endif
+
 /* Video codecs */
 #define MK_VCODEC_MPEG1    "V_MPEG1"
 #define MK_VCODEC_MPEG2    "V_MPEG2"
