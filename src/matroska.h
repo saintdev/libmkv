@@ -41,7 +41,6 @@ struct mk_Writer_s {
 
     mk_Context      *root;
     mk_Context      *cluster;
-    mk_Context      *frame;
     mk_Context      *freelist;
     mk_Context      *actlist;
 
@@ -51,11 +50,6 @@ struct mk_Writer_s {
 
     uint8_t         wrote_header;
     
-    int64_t         frame_tc;
-    int64_t         prev_frame_tc_scaled;
-    int64_t         max_frame_tc;
-    uint8_t         in_frame;
-    uint8_t         keyframe;
     
     uint8_t         num_tracks;
     mk_Track        **tracks;
@@ -63,6 +57,13 @@ struct mk_Writer_s {
 
 struct mk_Track_s {
     int             track_id;
+    
+    mk_Context      *frame;
+    int64_t         frame_tc;
+    int64_t         prev_frame_tc_scaled;
+    int64_t         max_frame_tc;
+    uint8_t         in_frame;
+    uint8_t         keyframe;
     mk_TrackConfig  *config;
 };
 
