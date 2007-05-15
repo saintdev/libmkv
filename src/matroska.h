@@ -37,27 +37,33 @@ struct mk_Context_s {
 struct mk_Writer_s {
     FILE            *fp;
 
-    unsigned        duration_ptr;
+    uint32_t        duration_ptr;
 
-    mk_Context          *root, *cluster, *frame;
-    mk_Context          *freelist;
-    mk_Context          *actlist;
-    mk_Track            *first_track;
+    mk_Context      *root;
+    mk_Context      *cluster;
+    mk_Context      *frame;
+    mk_Context      *freelist;
+    mk_Context      *actlist;
 
     int64_t         def_duration;
     int64_t         timescale;
     int64_t         cluster_tc_scaled;
 
-    char            wrote_header;
-    unsigned        num_tracks;
+    uint8_t         wrote_header;
     
-    int64_t         frame_tc, prev_frame_tc_scaled, max_frame_tc;
-    char            in_frame, keyframe;
+    int64_t         frame_tc;
+    int64_t         prev_frame_tc_scaled;
+    int64_t         max_frame_tc;
+    uint8_t         in_frame;
+    uint8_t         keyframe;
+    
+    uint8_t         num_tracks;
+    mk_Track        **tracks;
 };
 
 struct mk_Track_s {
-    int     track_id;
-    mk_Track *next;
+    int             track_id;
+    mk_TrackConfig  *config;
 };
 
 #endif

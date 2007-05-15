@@ -88,23 +88,23 @@ int main( int argc, char ** argv )
                 return 1;
         }
     }
-
+/*
     mkvfile = mk_createWriter( output );
 
-/*    mk_writeHeader(mkvfile, "test.c",
+    mk_writeHeader(mkvfile, "test.c",
                    MKV_CODEC_X264,
                    codecPrivate, sizeof( codecPrivate ),
                    default_frame_duration,
                    timescale,
                    width, height,
                    d_width, d_height );
-*/
+
     mk_close( mkvfile );
 
     free( output );
     free( in_video );
     free( in_audio );
-
+*/
     return 0;
 }
 

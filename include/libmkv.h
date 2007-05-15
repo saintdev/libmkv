@@ -25,34 +25,42 @@
 #define _LIBMKV_H 1
 
 /* Video codecs */
-#define MKV_VCODEC_MPEG1    "V_MPEG1"
-#define MKV_VCODEC_MPEG2    "V_MPEG2"
-#define MKV_VCODEC_THEORA   "V_THEORA"
-#define MKV_VCODEC_SNOW     "V_SNOW"
-#define MKV_VCODEC_MP4ASP   "V_MPEG4/ISO/ASP"
-#define MKV_VCODEC_MP4AVC   "V_MPEG4/ISO/AVC"
+#define MK_VCODEC_MPEG1    "V_MPEG1"
+#define MK_VCODEC_MPEG2    "V_MPEG2"
+#define MK_VCODEC_THEORA   "V_THEORA"
+#define MK_VCODEC_SNOW     "V_SNOW"
+#define MK_VCODEC_MP4ASP   "V_MPEG4/ISO/ASP"
+#define MK_VCODEC_MP4AVC   "V_MPEG4/ISO/AVC"
 
 /* Audio codecs */
-#define MKV_ACODEC_AC3      "A_AC3"
-#define MKV_ACODEC_MP3      "A_MPEG/L3"
-#define MKV_ACODEC_MP2      "A_MPEG/L2"
-#define MKV_ACODEC_MP1      "A_MPEG/L1"
-#define MKV_ACODEC_DTS      "A_DTS"
-#define MKV_ACODEC_PCMINTLE "A_PCM/INT/LIT"
-#define MKV_ACODEC_PCMFLTLE "A_PCM/FLOAT/IEEE"
-#define MKV_ACODEC_TTA1     "A_TTA1"
-#define MKV_ACODEC_WAVPACK  "A_WAVPACK4"
-#define MKV_ACODEC_VORBIS   "A_VORBIS"
-#define MKV_ACODEC_FLAC     "A_FLAC"
-#define MKV_ACODEC_AAC      "A_AAC"
+#define MK_ACODEC_AC3      "A_AC3"
+#define MK_ACODEC_MP3      "A_MPEG/L3"
+#define MK_ACODEC_MP2      "A_MPEG/L2"
+#define MK_ACODEC_MP1      "A_MPEG/L1"
+#define MK_ACODEC_DTS      "A_DTS"
+#define MK_ACODEC_PCMINTLE "A_PCM/INT/LIT"
+#define MK_ACODEC_PCMFLTLE "A_PCM/FLOAT/IEEE"
+#define MK_ACODEC_TTA1     "A_TTA1"
+#define MK_ACODEC_WAVPACK  "A_WAVPACK4"
+#define MK_ACODEC_VORBIS   "A_VORBIS"
+#define MK_ACODEC_FLAC     "A_FLAC"
+#define MK_ACODEC_AAC      "A_AAC"
 
 /* Subtitles */
-#define MKV_SUBTITLE_ASCII  "S_TEXT/ASCII"
-#define MKV_SUBTITLE_UTF8   "S_TEXT/UTF8"
-#define MKV_SUBTITLE_SSA    "S_TEXT/SSA"
-#define MKV_SUBTITLE_ASS    "S_TEXT/ASS"
-#define MKV_SUBTITLE_USF    "S_TEXT/USF"
-#define MKV_SUBTITLE_VOBSUB "S_VOBSUB"
+#define MK_SUBTITLE_ASCII  "S_TEXT/ASCII"
+#define MK_SUBTITLE_UTF8   "S_TEXT/UTF8"
+#define MK_SUBTITLE_SSA    "S_TEXT/SSA"
+#define MK_SUBTITLE_ASS    "S_TEXT/ASS"
+#define MK_SUBTITLE_USF    "S_TEXT/USF"
+#define MK_SUBTITLE_VOBSUB "S_VOBSUB"
+
+#define MK_TRACK_VIDEO     0x01
+#define MK_TRACK_AUDIO     0x02
+#define MK_TRACK_COMPLEX   0x03
+#define MK_TRACK_LOGO      0x10
+#define MK_TRACK_SUBTITLE  0x11
+#define MK_TRACK_BUTTONS   0x12
+#define MK_TRACK_CONTROL   0x20
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,24 +95,23 @@ struct mk_TrackConfig_s {
 
 struct mk_VideoConfig_s {
     char    flagInterlaced;
-    unsigned width;
-    unsigned height;
-    unsigned d_width;
-    unsigned d_height;
+    unsigned width;                 // Pixel width
+    unsigned height;                // Pixel height
+    unsigned d_width;               // Display width
+    unsigned d_height;              // Display height
 };
 
 struct mk_AudioConfig_s {
-    float   samplingFreq;
-    unsigned    channels;
-    unsigned    bitDepth;
+    float   samplingFreq;           // Sampling Frequency in Hz
+    unsigned    channels;           // Number of channels for this track
+    unsigned    bitDepth;           // Bits per sample (PCM)
 };
 
-mk_Writer *mk_createWriter( const char *filename );
-
-int   mk_writeHeader(mk_Writer *w, const char *writingApp,
-                     mk_TrackConfig *tracks[], int num_tracks,
-                     int64_t default_frame_duration,
-                     int64_t timescale );
+mk_Writer *mk_createWriter(const char *filename,
+                           int64_t default_frame_duration,
+                           int64_t timescale);
+mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc);
+int   mk_writeHeader(mk_Writer *w, const char *writingApp);
 
 int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData( mk_Writer *w, const void *data, unsigned size );
