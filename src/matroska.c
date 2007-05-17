@@ -432,7 +432,7 @@ int   mk_writeTrack(mk_Writer *w, mk_Context *tracks, mk_Track *t)
         CHECK(mk_writeStr(ti, 0x22b59c, t->config->language));
     switch (t->config->trackType)
     {
-        case MK_TRACK_VIDEO:           // Video
+        case MK_TRACK_VIDEO:    // Video
             if ((v = mk_createContext(w, ti, 0xe0)) == NULL)
                 return -1;
             CHECK(mk_writeUInt(v, 0xb0, t->config->video->width));
@@ -440,7 +440,7 @@ int   mk_writeTrack(mk_Writer *w, mk_Context *tracks, mk_Track *t)
             CHECK(mk_writeUInt(v, 0x54b0, t->config->video->d_width));
             CHECK(mk_writeUInt(v, 0x54ba, t->config->video->d_height));
             break;
-        case MK_TRACK_AUDIO:       // Audio
+        case MK_TRACK_AUDIO:    // Audio
             if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
                 return -1;
             CHECK(mk_writeFloat(v, 0xb5, t->config->audio->samplingFreq));
@@ -448,7 +448,7 @@ int   mk_writeTrack(mk_Writer *w, mk_Context *tracks, mk_Track *t)
             if (t->config->audio->bitDepth)
                 CHECK(mk_writeUInt(v, 0x6264, t->config->audio->bitDepth));
             break;
-        default:            // Other
+        default:                // Other
             return -1;
     }
     CHECK(mk_closeContext(v, 0));
