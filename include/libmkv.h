@@ -96,7 +96,6 @@ struct mk_TrackConfig_s {
     char        *codecName;
     mk_VideoConfig *video;
     mk_AudioConfig *audio;
-    mk_Track       *track;          // Handle for this track.
 };
 
 struct mk_VideoConfig_s {
