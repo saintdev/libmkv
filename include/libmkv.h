@@ -5,6 +5,7 @@
  * $Id: $
  *
  * Authors: Mike Matsnev
+ *          Nathan Caldwell
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +21,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
-
 #ifndef _LIBMKV_H
 #define _LIBMKV_H 1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -79,48 +83,48 @@ typedef struct mk_VideoConfig_s mk_VideoConfig;
 typedef struct mk_AudioConfig_s mk_AudioConfig;
 
 struct mk_TrackConfig_s {
-    unsigned    trackUID;           // Optional: Unique identifier for the track.
-    unsigned    trackType;          // Required: 1 = Video, 2 = Audio.
-    char        flagEnabled;        // Optional: Set 1 if the track is used (Default: enabled)
-    char        flagDefault;
-    char        flagForced;         // Optional: Set 1 if the track MUST be shown during playback (Default: disabled)
-    char        flagLacing;         // Required: Set 1 if the track may contain blocks using lacing.
-    unsigned    minCache;           // Optional: See Matroska spec. (Default: cache disabled)
-    unsigned    maxCache;
-    int64_t     defaultDuration;    // Optional: Number of nanoseconds per frame.
-    char        *name;
-    char        *language;
-    char        *codecID;           // Required: See codecs above.
-    void        *codecPrivate;
-    unsigned    codecPrivateSize;
-    char        *codecName;
-    mk_VideoConfig *video;
-    mk_AudioConfig *audio;
+  uint64_t    trackUID;            // Optional: Unique identifier for the track.
+  uint8_t     trackType;           // Required: 1 = Video, 2 = Audio.
+  int8_t      flagEnabled;         // Required: Set 1 if the track is used, 0 if unused. (Default: enabled)
+  int8_t      flagDefault;         // Required: Set 1 if this track is default, 0 if not default, -1 is undefined.
+  int8_t      flagForced;          // Optional: Set 1 if the track MUST be shown during playback (Default: disabled)
+  int8_t      flagLacing;          // Required: Set 1 if the track may contain blocks using lacing.
+  uint8_t     minCache;            // Optional: See Matroska spec. (Default: cache disabled)
+  uint8_t     maxCache;
+  int64_t     defaultDuration;     // Optional: Number of nanoseconds per frame.
+  char        *name;
+  char        *language;
+  char        *codecID;            // Required: See codecs above.
+  void        *codecPrivate;
+  unsigned    codecPrivateSize;
+  char        *codecName;
+  mk_VideoConfig *video;
+  mk_AudioConfig *audio;
 };
 
 struct mk_VideoConfig_s {
-    char    flagInterlaced;
-    unsigned width;                 // Pixel width
-    unsigned height;                // Pixel height
-    unsigned d_width;               // Display width
-    unsigned d_height;              // Display height
+  char      flagInterlaced;
+  unsigned  pixelWidth;            // Pixel width
+  unsigned  pixelHeight;           // Pixel height
+  unsigned  pixelCrop[4];          // Pixel crop - 0 = bottom, 1 = top, 2 = left, 3 = right
+  unsigned  displayWidth;          // Display width
+  unsigned  displayHeight;         // Display height
+  char      displayUnit;           // Display Units - 0 = pixels, 1 = cm, 2 = in
 };
 
 struct mk_AudioConfig_s {
-    float   samplingFreq;           // Sampling Frequency in Hz
-    unsigned    channels;           // Number of channels for this track
-    unsigned    bitDepth;           // Bits per sample (PCM)
+  float   samplingFreq;            // Sampling Frequency in Hz
+  unsigned    channels;            // Number of channels for this track
+  unsigned    bitDepth;            // Bits per sample (PCM)
 };
 
-mk_Writer *mk_createWriter(const char *filename,
-//                           int64_t default_frame_duration,
-                           int64_t timescale);
+mk_Writer *mk_createWriter(const char *filename, int64_t timescale);
 mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc);
-int   mk_writeHeader(mk_Writer *w, const char *writingApp);
-
+int  mk_writeHeader(mk_Writer *w, const char *writingApp);
 int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned size);
 int  mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, int keyframe);
+int  mk_createChapterSimple(mk_Writer *w, unsigned start, unsigned end, char *name);
 int  mk_close( mk_Writer *w );
 
 #ifdef __cplusplus

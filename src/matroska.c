@@ -5,6 +5,7 @@
  * $Id: $
  *
  * Authors: Mike Matsnev
+ *          Nathan Caldwell
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,29 +21,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
-
-#define _LARGEFILE_SOURCE
-#define _FILE_OFFSET_BITS 64
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#else
-#include <inttypes.h>
-#endif
-
 #include "libmkv.h"
 #include "matroska.h"
 #include "config.h"
 
-#define CLSIZE    1048576
-#define CHECK(x)  do { if ((x) < 0) return -1; } while (0)
-
-
-static mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id) {
+mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id) {
   mk_Context  *c;
 
   if (w->freelist) {
@@ -140,7 +123,7 @@ static int    mk_flushContextID(mk_Context *c) {
   return 0;
 }
 
-static int    mk_flushContextData(mk_Context *c) {
+int    mk_flushContextData(mk_Context *c) {
   if (c->d_cur == 0)
     return 0;
 
@@ -155,7 +138,7 @@ static int    mk_flushContextData(mk_Context *c) {
   return 0;
 }
 
-static int    mk_closeContext(mk_Context *c, unsigned *off) {
+int    mk_closeContext(mk_Context *c, unsigned *off) {
   if (c->id) {
     CHECK(mk_writeID(c->parent, c->id));
     CHECK(mk_writeSize(c->parent, c->d_cur));
@@ -193,7 +176,7 @@ static void   mk_destroyContexts(mk_Writer *w) {
   w->freelist = w->actlist = w->root = NULL;
 }
 
-static int    mk_writeStr(mk_Context *c, unsigned id, const char *str) {
+int    mk_writeStr(mk_Context *c, unsigned id, const char *str) {
   size_t  len = strlen(str);
 
   CHECK(mk_writeID(c, id));
@@ -202,14 +185,14 @@ static int    mk_writeStr(mk_Context *c, unsigned id, const char *str) {
   return 0;
 }
 
-static int    mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size) {
+int    mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size) {
   CHECK(mk_writeID(c, id));
   CHECK(mk_writeSize(c, size));
   CHECK(mk_appendContextData(c, data, size));
   return 0;
 }
 
-static int    mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui) {
+int    mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui) {
   unsigned char   c_ui[8] = { ui >> 56, ui >> 48, ui >> 40, ui >> 32, ui >> 24, ui >> 16, ui >> 8, ui };
   unsigned    i = 0;
 
@@ -221,7 +204,7 @@ static int    mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui) {
   return 0;
 }
 
-static int        mk_writeSInt(mk_Context *c, unsigned id, int64_t si) {
+static int    mk_writeSInt(mk_Context *c, unsigned id, int64_t si) {
   unsigned char   c_si[8] = { si >> 56, si >> 48, si >> 40, si >> 32, si >> 24, si >> 16, si >> 8, si };
   unsigned    i = 0;
 
@@ -253,7 +236,7 @@ static int    mk_writeFloatRaw(mk_Context *c, float f) {
   return mk_appendContextData(c, c_f, 4);
 }
 
-static int    mk_writeFloat(mk_Context *c, unsigned id, float f) {
+int    mk_writeFloat(mk_Context *c, unsigned id, float f) {
   CHECK(mk_writeID(c, id));
   CHECK(mk_writeSize(c, 4));
   CHECK(mk_writeFloatRaw(c, f));
@@ -286,9 +269,7 @@ static unsigned   mk_ebmlSIntSize(int64_t si) {
   return 8 - i;
 }
 
-mk_Writer *mk_createWriter(const char *filename,
-                           int64_t timescale)
-{
+mk_Writer *mk_createWriter(const char *filename, int64_t timescale) {
   mk_Writer *w = malloc(sizeof(*w));
   if (w == NULL)
     return NULL;
@@ -325,48 +306,7 @@ mk_Writer *mk_createWriter(const char *filename,
   return w;
 }
 
-mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
-{
-    mk_Track *track = calloc(1, sizeof(*track));
-    if (track == NULL)
-        return NULL;
-    track->config = calloc(1, sizeof(mk_TrackConfig));
-    if (track->config == NULL)
-        return NULL;
-    memcpy(track->config, tc, sizeof(mk_TrackConfig));
-    if(tc->video)
-    {
-        track->config->video = calloc(1, sizeof(mk_VideoConfig));
-        if (track->config->video == NULL)
-            return NULL;
-        memcpy(track->config->video, tc->video, sizeof(mk_VideoConfig));
-    }
-    else if (tc->audio)
-    {
-        track->config->audio = calloc(1, sizeof(mk_AudioConfig));
-        if (track->config->audio == NULL)
-            return NULL;
-        memcpy(track->config->audio, tc->audio, sizeof(mk_AudioConfig));
-    }
-    if (tc->codecPrivate && (tc->codecPrivateSize > 0))
-    {
-        track->config->codecPrivate = calloc(1, tc->codecPrivateSize);
-        if (track->config->codecPrivate == NULL)
-            return NULL;
-        memcpy(track->config->codecPrivate, tc->codecPrivate, tc->codecPrivateSize);
-        track->config->codecPrivateSize = tc->codecPrivateSize;
-    }
-    
-    w->tracks = realloc( w->tracks, (w->num_tracks + 1) * sizeof(mk_Track *));
-    w->tracks[w->num_tracks] = track;
-    track->track_id = w->num_tracks + 1;
-    w->num_tracks++;
-    
-    return track;
-}
-
-int   mk_writeHeader(mk_Writer *w, const char *writingApp)
-{
+int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   mk_Context  *c, *s;
   int   i;
 
@@ -387,16 +327,18 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp)
   if ((c = mk_createContext(w, w->root, 0x18538067)) == NULL) // Segment
     return -1;
   CHECK(mk_flushContextID(c));
+  w->segment_ptr = c->d_cur;
 //  CHECK(mk_writeSize(c, 0xfffff));                         // Dummy value until we get the actual size. 1TB should be enough.
-  CHECK(mk_closeContext(c, 0));
+  CHECK(mk_closeContext(c, &w->segment_ptr));
   /* Shouldn't the Segment encapsulate all the rest of the tags, why is it closed here? */
-
+//  w->segment_ptr = w->root->d_cur;
+  
   if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
     return -1;
   if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
     return -1;
   CHECK(mk_writeUInt(s, 0x53ab, 0x114d9b74)); // SeekID
-  CHECK(mk_writeUInt(s, 0x53ac, 0xffffffff)); // SeekPosition
+  CHECK(mk_writeUInt(s, 0x53ac, 0xecececec)); // SeekPosition
   w->seekhead_ptr = s->d_cur - 7;
                                              /* We write a dummy number here so
                                               * there is enough space for our
@@ -430,58 +372,8 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp)
 
   w->wrote_header = 1;
   w->def_duration = w->tracks[0]->config->defaultDuration;
-
+printf("libmkv: w->segment_ptr = %d\n", w->segment_ptr);
   return 0;
-}
-
-int   mk_writeTrack(mk_Writer *w, mk_Context *tracks, mk_Track *t)
-{
-    mk_Context  *ti, *v;
-    
-    if ((ti = mk_createContext(w, tracks, 0xae)) == NULL) // TrackEntry
-        return -1;
-    CHECK(mk_writeUInt(ti, 0xd7, t->track_id)); // TrackNumber
-    if (t->config->trackUID)
-        CHECK(mk_writeUInt(ti, 0x73c5, t->config->trackUID)); // TrackUID
-    else
-        CHECK(mk_writeUInt(ti, 0x73c5, t->track_id));
-    CHECK(mk_writeUInt(ti, 0x83, t->config->trackType)); // TrackType
-    CHECK(mk_writeUInt(ti, 0x9c, t->config->flagLacing)); // FlagLacing
-    CHECK(mk_writeStr(ti, 0x86, t->config->codecID)); // CodecID
-    if (t->config->codecPrivateSize)
-        CHECK(mk_writeBin(ti, 0x63a2, t->config->codecPrivate, t->config->codecPrivateSize)); // CodecPrivate
-//    if (w->def_duration)
-//        CHECK(mk_writeUInt(ti, 0x23e383, w->def_duration)); // DefaultDuration
-    if (t->config->defaultDuration)
-        CHECK(mk_writeUInt(ti, 0x23e383, t->config->defaultDuration));
-    if (t->config->language)
-        CHECK(mk_writeStr(ti, 0x22b59c, t->config->language));
-    switch (t->config->trackType)
-    {
-        case MK_TRACK_VIDEO:    // Video
-            if ((v = mk_createContext(w, ti, 0xe0)) == NULL)
-                return -1;
-            CHECK(mk_writeUInt(v, 0xb0, t->config->video->width));
-            CHECK(mk_writeUInt(v, 0xba, t->config->video->height));
-            CHECK(mk_writeUInt(v, 0x54b0, t->config->video->d_width));
-            CHECK(mk_writeUInt(v, 0x54ba, t->config->video->d_height));
-            break;
-        case MK_TRACK_AUDIO:    // Audio
-            if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
-                return -1;
-            CHECK(mk_writeFloat(v, 0xb5, t->config->audio->samplingFreq));
-            CHECK(mk_writeUInt(v, 0x9f, t->config->audio->channels));
-            if (t->config->audio->bitDepth)
-                CHECK(mk_writeUInt(v, 0x6264, t->config->audio->bitDepth));
-            break;
-        default:                // Other
-            return -1;
-    }
-    CHECK(mk_closeContext(v, 0));
-
-    CHECK(mk_closeContext(ti, 0));
-
-    return 0;
 }
 
 static int mk_closeCluster(mk_Writer *w) {
@@ -586,35 +478,30 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
 int   mk_close(mk_Writer *w) {
   int   i, ret = 0;
   int   def_duration = 0;
-  mk_Context *c, *s;
+  mk_Context *c, *s, *e;
   mk_Track *tk;
+  mk_Chapter *chapter;
   
-  for (i = 0; i < w->num_tracks; i++)
+  for (i = w->num_tracks; i >= 0; i--)
   {
     tk = w->tracks[i];
-    
+    w->tracks[i] = NULL;
+
     if (mk_flushFrame(w, tk) < 0)
       ret = -1;
-    if (tk->config->video)
-      free(tk->config->video);
-    if (tk->config->audio)
-      free(tk->config->audio);
-    if (tk->config->codecPrivate != NULL && tk->config->codecPrivateSize > 0)
-      free(tk->config->codecPrivate);
-
-    free(tk);
+    mk_destroyTrack(tk);
   }
+  
   if (mk_closeCluster(w) < 0)
     ret = -1;
-  if (w->wrote_header) {
 
-    if ((c = mk_createContext(w, w->root, 0x114d9b74)) != NULL) // SeekHead
-    {
-      w->seek_data->seekhead = ftell(w->fp);
-      if (w->seek_data->segmentinfo)
-      {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) // Seek
-        {
+  mk_writeChapters(w);
+
+  if (w->wrote_header) {
+    if ((c = mk_createContext(w, w->root, 0x114d9b74)) != NULL) { // SeekHead
+      w->seek_data->seekhead = ftell(w->fp) - w->segment_ptr;
+      if (w->seek_data->segmentinfo) {
+        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
           if (mk_writeUInt(s, 0x53ab, 0x1549a966) < 0) // SeekID
             ret = -1;
           if (mk_writeUInt(s, 0x53ac, w->seek_data->segmentinfo) < 0) // SeekPosition
@@ -623,10 +510,8 @@ int   mk_close(mk_Writer *w) {
             ret = -1;
         }
       }
-      if (w->seek_data->tracks)
-      {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) // Seek
-        {
+      if (w->seek_data->tracks) {
+        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) {// Seek
           if (mk_writeUInt(s, 0x53ab, 0x1654ae6b) < 0) // SeekID
             ret = -1;
           if (mk_writeUInt(s, 0x53ac, w->seek_data->tracks) < 0) // SeekPosition
@@ -635,10 +520,8 @@ int   mk_close(mk_Writer *w) {
             ret = -1;
         }
       }
-      if (w->seek_data->cues)
-      {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) // Seek
-        {
+      if (w->seek_data->cues) {
+        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
           if (mk_writeUInt(s, 0x53ab, 0x1c53bb6b) < 0) // SeekID
             ret = -1;
           if (mk_writeUInt(s, 0x53ac, w->seek_data->cues) < 0) // SeekPosition
@@ -647,10 +530,8 @@ int   mk_close(mk_Writer *w) {
             ret = -1;
         }
       }
-      if (w->seek_data->attachments)
-      {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) // Seek
-        {
+      if (w->seek_data->attachments) {
+        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
           if (mk_writeUInt(s, 0x53ab, 0x1941a469) < 0) // SeekID
             ret = -1;
           if (mk_writeUInt(s, 0x53ac, w->seek_data->attachments) < 0) // SeekPosition
@@ -659,10 +540,8 @@ int   mk_close(mk_Writer *w) {
             ret = -1;
         }
       }
-      if (w->seek_data->chapters)
-      {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) // Seek
-        {
+      if (w->seek_data->chapters) {
+        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
           if (mk_writeUInt(s, 0x53ab, 0x1043a770) < 0) // SeekID
             ret = -1;
           if (mk_writeUInt(s, 0x53ac, w->seek_data->chapters) < 0) // SeekPosition
@@ -671,10 +550,8 @@ int   mk_close(mk_Writer *w) {
           ret = -1;
         }
       }
-      if (w->seek_data->tags)
-      {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) // Seek
-        {
+      if (w->seek_data->tags) {
+        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
           if (mk_writeUInt(s, 0x53ab, 0x1254c367) < 0) // SeekID
             ret = -1;
           if (mk_writeUInt(s, 0x53ac, w->seek_data->tags) < 0) // SeekPosition
@@ -700,6 +577,7 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
   }
 
+  mk_destroyChapters(w);
   mk_destroyContexts(w);
   fclose(w->fp);
   free(w->seek_data);
