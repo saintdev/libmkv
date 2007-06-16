@@ -25,86 +25,35 @@
 #include "config.h"
 
 int   mk_createChapterSimple(mk_Writer *w, unsigned start, unsigned end, char *name) {
-  mk_Chapter *chapter = calloc(1, sizeof(*chapter));
-  if (chapter == NULL)
+  mk_Context *ca, *cd;
+
+  if (w->chapters == NULL)
+  {
+//    w->seek_data->chapters = ftell(w->fp) - w->segment_ptr;   // FIXME: This won't work any more.
+    if ((w->chapters = mk_createContext(w, w->root, 0x1043a770)) == NULL) // Chapters
+      return -1;
+    if ((w->edition_entry = mk_createContext(w, w->chapters, 0x45b0)) == NULL) // EditionEntry
+      return -1;
+    CHECK(mk_writeUInt(w->edition_entry, 0xb6, 0)); // EditionFlagOrdered - Force simple chapters.
+  }
+  if ((ca = mk_createContext(w, w->edition_entry, 0x45db)) == NULL) // ChapterAtom
     return -1;
-
-  chapter->timeStart = start;
-  chapter->timeEnd = end;
-  chapter->chapterDisplay = strdup(name);
-  chapter->next = NULL;
-  if (w->chapters == NULL) {
-    chapter->prev = NULL;
-    chapter->tail = malloc(sizeof(mk_Chapter *));
-    w->chapters = chapter;
+  CHECK(mk_writeUInt(ca, 0x91, start)); // ChapterTimeStart
+  CHECK(mk_writeUInt(ca, 0x91, end)); // ChapterTimeEnd
+  if (name != NULL) {
+    if ((cd = mk_createContext(w, ca, 0x80)) == NULL) // ChapterDisplay
+      return -1;
+    CHECK(mk_writeStr(cd, 0x85, name)); // ChapterDisplay
+    CHECK(mk_closeContext(cd, 0));
   }
-  else {
-    chapter->prev = *(w->chapters->tail);
-    chapter->tail = w->chapters->tail;
-    (*chapter->tail)->next = chapter;
-  }
-  *chapter->tail = chapter;
-
+  CHECK(mk_closeContext(ca, 0));
 
   return 0;
 }
 
 int   mk_writeChapters(mk_Writer *w) {
-  mk_Chapter *chapter;
-  mk_Context *c, *e;
-  
-  if (w->chapters == NULL)
+  if ((w->chapters == NULL) || (w->edition_entry == NULL))
     return -1;
-  w->seek_data->chapters = ftell(w->fp) - w->segment_ptr;
-  chapter = w->chapters;
-  if ((c = mk_createContext(w, w->root, 0x1043a770)) == NULL) // Chapters
-    return -1;
-  if ((e = mk_createContext(w, c, 0x45b0)) == NULL) // EditionEntry
-    return -1;
-  CHECK(mk_writeUInt(e, 0xb6, 0)); // EditionFlagOrdered - Force simple chapters for now.
-  while (chapter != NULL) {
-    mk_writeChapter(w, e, chapter); // FIXME: check return value!
-    chapter = chapter->next;
-  }
-  CHECK(mk_closeContext(e, 0));
-  CHECK(mk_closeContext(c, 0));
-  mk_flushContextData(w->root);         // FIXME: check return value!
-}
-
-int   mk_writeChapter(mk_Writer *w, mk_Context *c, mk_Chapter *chapter) {
-  mk_Context *ca, *cd;
-  
-  if ((ca = mk_createContext(w, c, 0x45db)) == NULL) // ChapterAtom
-    return -1;
-  CHECK(mk_writeUInt(ca, 0x91, chapter->timeStart)); // ChapterTimeStart
-  CHECK(mk_writeUInt(ca, 0x92, chapter->timeEnd)); // ChapterTimeEnd
-  if (chapter->chapterDisplay != NULL) {
-    if ((cd = mk_createContext(w, ca, 0x80)) == NULL) // ChapterDisplay
-      return -1;
-    CHECK(mk_writeStr(cd, 0x85, chapter->chapterDisplay)); // ChapString
-    CHECK(mk_closeContext(cd, 0));
-  }
-  CHECK(mk_closeContext(ca, 0));
-}
-
-void  mk_destroyChapter(mk_Chapter *chapter) {
-  if (strlen(chapter->chapterDisplay) > 0)
-    free(chapter->chapterDisplay);
-  if (chapter->next == NULL)
-    *chapter->tail = chapter->prev;
-  else
-    chapter->next->prev = chapter->prev;
-  if (chapter->prev != NULL)
-    chapter->prev->next = chapter->next;
-  free(chapter);
-}
-
-void mk_destroyChapters(mk_Writer *w) {
-  mk_Chapter *chapter = *w->chapters->tail;
-
-  while (chapter != NULL) {
-    mk_destroyChapter(chapter);
-    chapter = chapter->prev;
-  }
-  w->chapters = NULL;
+  CHECK(mk_closeContext(w->edition_entry, 0));
+  CHECK(mk_closeContext(w->chapters, 0));
 }

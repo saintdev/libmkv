@@ -54,6 +54,9 @@ struct mk_Writer_s {
   mk_Context      *cluster;
   mk_Context      *freelist;
   mk_Context      *actlist;
+  mk_Context      *chapters;
+  mk_Context      *edition_entry;
+  mk_Context      *tracks;
 
   int64_t         def_duration;
   int64_t         timescale;
@@ -61,12 +64,18 @@ struct mk_Writer_s {
 
   uint8_t         wrote_header;
 
-  mk_Seek         *seek_data;
-
-  mk_Chapter      *chapters;
+  struct {
+    uint32_t       segmentinfo;
+    uint32_t       seekhead;
+    uint32_t       tracks;
+    uint32_t       cues;
+    uint32_t       chapters;
+    uint32_t       attachments;
+    uint32_t       tags;
+  } seek_data;
 
   uint8_t         num_tracks;
-  mk_Track        **tracks;
+  mk_Track        **tracks_arr;
 };
 
 struct mk_Track_s {
@@ -78,28 +87,7 @@ struct mk_Track_s {
   int64_t         max_frame_tc;
   uint8_t         in_frame;
   uint8_t         keyframe;
-  mk_TrackConfig  *config;
-};
-
-struct mk_Seek_s {
-  uint32_t       segmentinfo;
-  uint32_t       seekhead;
-  uint32_t       tracks;
-  uint32_t       cues;
-  uint32_t       chapters;
-  uint32_t       attachments;
-  uint32_t       tags;
-};
-
-struct mk_Chapter_s {
-  uint64_t    chapterUID;
-  uint64_t    segmentUID;
-  unsigned    timeStart;
-  unsigned    timeEnd;
-  char        flagHidden;
-  char        *chapterDisplay;
-  
-  mk_Chapter  *next, *prev, **tail;
+  uint64_t        default_duration;
 };
 
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
@@ -110,9 +98,7 @@ int  mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
 int  mk_flushContextData(mk_Context *c);
 int  mk_closeContext(mk_Context *c, unsigned *off);
 
-int  mk_writeTrack(mk_Writer *w, mk_Context *tracks, mk_Track *t);
-void mk_destroyTrack(mk_Track *track);
+int  mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int  mk_writeChapters(mk_Writer *w);
-void mk_destroyChapters(mk_Writer *w);
 
 #endif

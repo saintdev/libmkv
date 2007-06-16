@@ -79,8 +79,6 @@ extern "C" {
 typedef struct mk_Writer_s mk_Writer;
 typedef struct mk_Track_s mk_Track;
 typedef struct mk_TrackConfig_s mk_TrackConfig;
-typedef struct mk_VideoConfig_s mk_VideoConfig;
-typedef struct mk_AudioConfig_s mk_AudioConfig;
 
 struct mk_TrackConfig_s {
   uint64_t    trackUID;            // Optional: Unique identifier for the track.
@@ -98,24 +96,20 @@ struct mk_TrackConfig_s {
   void        *codecPrivate;
   unsigned    codecPrivateSize;
   char        *codecName;
-  mk_VideoConfig *video;
-  mk_AudioConfig *audio;
-};
-
-struct mk_VideoConfig_s {
-  char      flagInterlaced;
-  unsigned  pixelWidth;            // Pixel width
-  unsigned  pixelHeight;           // Pixel height
-  unsigned  pixelCrop[4];          // Pixel crop - 0 = bottom, 1 = top, 2 = left, 3 = right
-  unsigned  displayWidth;          // Display width
-  unsigned  displayHeight;         // Display height
-  char      displayUnit;           // Display Units - 0 = pixels, 1 = cm, 2 = in
-};
-
-struct mk_AudioConfig_s {
-  float   samplingFreq;            // Sampling Frequency in Hz
-  unsigned    channels;            // Number of channels for this track
-  unsigned    bitDepth;            // Bits per sample (PCM)
+  struct {
+    char      flagInterlaced;
+    unsigned  pixelWidth;            // Pixel width
+    unsigned  pixelHeight;           // Pixel height
+    unsigned  pixelCrop[4];          // Pixel crop - 0 = bottom, 1 = top, 2 = left, 3 = right
+    unsigned  displayWidth;          // Display width
+    unsigned  displayHeight;         // Display height
+    char      displayUnit;           // Display Units - 0 = pixels, 1 = cm, 2 = in
+  } video;
+  struct {
+    float   samplingFreq;            // Sampling Frequency in Hz
+    unsigned    channels;            // Number of channels for this track
+    unsigned    bitDepth;            // Bits per sample (PCM)
+  } audio;
 };
 
 mk_Writer *mk_createWriter(const char *filename, int64_t timescale);
