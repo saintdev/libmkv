@@ -282,6 +282,13 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale) {
     return NULL;
   }
 
+  if ((w->cues = mk_createContext(w, w->root, 0x1c53bb6b)) == NULL) // Cues
+  {
+    mk_destroyContexts(w);
+    free(w);
+    return NULL;
+  }
+
   w->fp = fopen(filename, "wb");
   if (w->fp == NULL) {
     mk_destroyContexts(w);
@@ -357,65 +364,101 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
 }
 
 static int mk_closeCluster(mk_Writer *w) {
-  if (w->cluster == NULL)
+  mk_Context *c;
+  if (w->cluster.context == NULL)
     return 0;
-  CHECK(mk_closeContext(w->cluster, 0));
-  w->cluster = NULL;
+  w->cluster.count++;
+  CHECK(mk_closeContext(w->cluster.context, 0));
+  w->cluster.context = NULL;
   CHECK(mk_flushContextData(w->root));
   return 0;
 }
 
 int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
+  mk_Context *c;
   int64_t   delta, ref = 0;
   unsigned  fsize, bgsize;
   unsigned char c_delta_flags[3];
+  int i;
 
   if (!track->in_frame)
     return 0;
 
-  delta = track->frame_tc/w->timescale - w->cluster_tc_scaled;
+  delta = track->frame_tc/w->timescale - w->cluster.tc_scaled;
   if (delta > 32767ll || delta < -32768ll)
     CHECK(mk_closeCluster(w));
 
-  if (w->cluster == NULL) {
-    w->cluster_tc_scaled = track->frame_tc / w->timescale;
-    w->cluster = mk_createContext(w, w->root, 0x1f43b675); // Cluster
-    if (w->cluster == NULL)
+  if (w->cluster.context == NULL) {
+    w->cluster.tc_scaled = track->frame_tc / w->timescale;
+    w->cluster.context = mk_createContext(w, w->root, 0x1f43b675); // Cluster
+    if (w->cluster.context == NULL)
       return -1;
 
-    CHECK(mk_writeUInt(w->cluster, 0xe7, w->cluster_tc_scaled)); // Cluster Timecode
+  w->cluster.pointer = ftell(w->fp) - w->segment_ptr;
+
+    CHECK(mk_writeUInt(w->cluster.context, 0xe7, w->cluster.tc_scaled)); // Cluster Timecode
 
     delta = 0;
+    w->cluster.block_count = 0;
+
+    if (w->cluster.count % 5 == 0) {
+      for(i = 0; i < w->num_tracks; i++)
+        w->tracks_arr[i]->cue_flag = 1;
+    }
   }
 
   fsize = track->frame ? track->frame->d_cur : 0;
   bgsize = fsize + 4 + mk_ebmlSizeSize(fsize + 4) + 1;
   if (!track->keyframe) {
-    ref = track->prev_frame_tc_scaled - w->cluster_tc_scaled - delta;
+    ref = track->prev_frame_tc_scaled - w->cluster.tc_scaled - delta;
     bgsize += 1 + 1 + mk_ebmlSIntSize(ref);
   }
 
-  CHECK(mk_writeID(w->cluster, 0xa0)); // BlockGroup
-  CHECK(mk_writeSize(w->cluster, bgsize));
-  CHECK(mk_writeID(w->cluster, 0xa1)); // Block
-  CHECK(mk_writeSize(w->cluster, fsize + 4));
-  CHECK(mk_writeSize(w->cluster, track->track_id)); // track number
+  CHECK(mk_writeID(w->cluster.context, 0xa0)); // BlockGroup
+  CHECK(mk_writeSize(w->cluster.context, bgsize));
+  CHECK(mk_writeID(w->cluster.context, 0xa1)); // Block
+  CHECK(mk_writeSize(w->cluster.context, fsize + 4));
+  CHECK(mk_writeSize(w->cluster.context, track->track_id)); // track number
+
+  w->cluster.block_count++;
 
   c_delta_flags[0] = delta >> 8;
   c_delta_flags[1] = delta;
   c_delta_flags[2] = 0;
-  CHECK(mk_appendContextData(w->cluster, c_delta_flags, 3));
+  CHECK(mk_appendContextData(w->cluster.context, c_delta_flags, 3));
   if (track->frame) {
-    CHECK(mk_appendContextData(w->cluster, track->frame->data, track->frame->d_cur));
+    CHECK(mk_appendContextData(w->cluster.context, track->frame->data, track->frame->d_cur));
     track->frame->d_cur = 0;
   }
   if (!track->keyframe)
-    CHECK(mk_writeSInt(w->cluster, 0xfb, ref)); // ReferenceBlock
+    CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
+
+  if (track->cue_flag && track->keyframe) {
+    if (w->cue_point.timecode != track->frame_tc) {
+      if (w->cue_point.context != NULL) {
+        CHECK(mk_closeContext(w->cue_point.context, 0));
+        w->cue_point.context = NULL;
+      }
+    }
+    if (w->cue_point.context == NULL) {
+      if ((w->cue_point.context = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
+        return -1;
+      CHECK(mk_writeUInt(w->cue_point.context, 0xb3, track->frame_tc)); // CueTime
+      w->cue_point.timecode = track->frame_tc;
+    }
+
+    if ((c = mk_createContext(w, w->cue_point.context, 0xb7)) == NULL)  // CueTrackPositions
+      return -1;
+    CHECK(mk_writeUInt(c, 0xf7, track->track_id)); // CueTrack
+    CHECK(mk_writeUInt(c, 0xf1, w->cluster.pointer));  // CueClusterPosition
+    CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
+    CHECK(mk_closeContext(c, 0));
+  }
 
   track->in_frame = 0;
-  track->prev_frame_tc_scaled = w->cluster_tc_scaled + delta;
+  track->prev_frame_tc_scaled = w->cluster.tc_scaled + delta;
 
-  if (w->cluster->d_cur > CLSIZE)
+  if (w->cluster.context->d_cur > CLSIZE)
     CHECK(mk_closeCluster(w));
 
   return 0;
@@ -473,6 +516,13 @@ int   mk_close(mk_Writer *w) {
     ret = -1;
 
   mk_writeChapters(w);
+  CHECK(mk_flushContextData(w->root));    // FIXME: Don't use CHECK here!
+
+  w->seek_data.cues = ftell(w->fp) - w->segment_ptr;
+  if (w->cue_point.context != NULL)
+    CHECK(mk_closeContext(w->cue_point.context, 0));
+  CHECK(mk_closeContext(w->cues, 0));
+  CHECK(mk_flushContextData(w->root));
 
   if (w->wrote_header) {
     if ((c = mk_createContext(w, w->root, 0x114d9b74)) != NULL) { // SeekHead

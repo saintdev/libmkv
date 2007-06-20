@@ -51,18 +51,22 @@ struct mk_Writer_s {
   uint32_t        segment_ptr;
 
   mk_Context      *root;
-  mk_Context      *cluster;
+//  mk_Context      *cluster;
   mk_Context      *freelist;
   mk_Context      *actlist;
   mk_Context      *chapters;
   mk_Context      *edition_entry;
   mk_Context      *tracks;
+  mk_Context      *cues;
 
   int64_t         def_duration;
   int64_t         timescale;
-  int64_t         cluster_tc_scaled;
+//  int64_t         cluster_tc_scaled;
 
   uint8_t         wrote_header;
+
+  uint8_t         num_tracks;
+  mk_Track        **tracks_arr;
 
   struct {
     uint32_t       segmentinfo;
@@ -74,8 +78,18 @@ struct mk_Writer_s {
     uint32_t       tags;
   } seek_data;
 
-  uint8_t         num_tracks;
-  mk_Track        **tracks_arr;
+  struct {
+    mk_Context    *context;
+    uint64_t      timecode;
+  } cue_point;
+
+  struct {
+    mk_Context    *context;
+    uint64_t      block_count;
+    uint64_t      count;
+    uint64_t      pointer;
+    int64_t       tc_scaled;
+  } cluster;
 };
 
 struct mk_Track_s {
@@ -88,6 +102,7 @@ struct mk_Track_s {
   uint8_t         in_frame;
   uint8_t         keyframe;
   uint64_t        default_duration;
+  uint8_t         cue_flag;
 };
 
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
