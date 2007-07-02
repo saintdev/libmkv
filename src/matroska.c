@@ -110,13 +110,13 @@ static int    mk_writeSize(mk_Context *c, unsigned size) {
 }
 
 static int    mk_flushContextID(mk_Context *c) {
-  unsigned char ff = 0xff;
+  unsigned char size_undf[8] = {0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
   if (c->id == 0)
     return 0;
 
   CHECK(mk_writeID(c->parent, c->id));
-  CHECK(mk_appendContextData(c->parent, &ff, 1));
+  CHECK(mk_appendContextData(c->parent, &size_undf, 8));
 
   c->id = 0;
 
@@ -138,7 +138,7 @@ int    mk_flushContextData(mk_Context *c) {
   return 0;
 }
 
-int    mk_closeContext(mk_Context *c, unsigned *off) {
+int    mk_closeContext(mk_Context *c, off_t *off) {
   if (c->id) {
     CHECK(mk_writeID(c->parent, c->id));
     CHECK(mk_writeSize(c->parent, c->d_cur));
@@ -243,6 +243,16 @@ int    mk_writeFloat(mk_Context *c, unsigned id, float f) {
   return 0;
 }
 
+static int    mk_writeVoid(mk_Context *c, unsigned length) {
+  char *c_void = calloc(length, sizeof(char));
+
+  CHECK(mk_writeID(c, 0xec));
+  CHECK(mk_writeSize(c, length));
+  CHECK(mk_appendContextData(c, c_void, length));
+  free(c_void);
+  return 0;
+}
+
 static unsigned   mk_ebmlSizeSize(unsigned s) {
   if (s < 0x7f)
     return 1;
@@ -269,7 +279,7 @@ static unsigned   mk_ebmlSIntSize(int64_t si) {
   return 8 - i;
 }
 
-mk_Writer *mk_createWriter(const char *filename, int64_t timescale) {
+mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_compat) {
   mk_Writer *w = malloc(sizeof(*w));
   if (w == NULL)
     return NULL;
@@ -297,13 +307,13 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale) {
   }
 
   w->timescale = timescale;
+  w->vlc_compat = vlc_compat;
 
   return w;
 }
 
 int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
-  mk_Context  *c, *s;
-  int   i;
+  mk_Context  *c;
 
   if (w->wrote_header)
     return -1;
@@ -323,22 +333,17 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
     return -1;
   CHECK(mk_flushContextID(c));
   w->segment_ptr = c->d_cur;
-//  CHECK(mk_writeSize(c, 0xfffff));                         // Dummy value until we get the actual size. 1TB should be enough.
   CHECK(mk_closeContext(c, &w->segment_ptr));
-  /* Shouldn't the Segment encapsulate all the rest of the tags, why is it closed here? */
 
-  if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
-    return -1;
-  if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-    return -1;
-  CHECK(mk_writeUInt(s, 0x53ab, 0x114d9b74)); // SeekID
-  CHECK(mk_writeUInt(s, 0x53ac, 0xecececec)); // SeekPosition
-  w->seekhead_ptr = s->d_cur - 7; /* We write a dummy number here so
-                                   * there is enough space for our
-                                   * actual position. We'll fill
-                                   * that in later (mk_closeWriter) */
-  CHECK(mk_closeContext(s, &w->seekhead_ptr));
-  CHECK(mk_closeContext(c, &w->seekhead_ptr));
+  if (w->vlc_compat)
+  {
+    CHECK(mk_writeVoid(w->root, 256));  // 256 bytes should be enough room for our Seek entries.
+  } else
+  {
+    w->seek_data.seekhead = 0x80000000;
+    CHECK(mk_writeSeek(w, &w->seekhead_ptr));
+    w->seek_data.seekhead = 0;
+  }
 
   if ((c = mk_createContext(w, w->root, 0x1549a966)) == NULL) // SegmentInfo
     return -1;
@@ -364,7 +369,6 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
 }
 
 static int mk_closeCluster(mk_Writer *w) {
-  mk_Context *c;
   if (w->cluster.context == NULL)
     return 0;
   w->cluster.count++;
@@ -498,13 +502,76 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
   return mk_appendContextData(track->frame, data, size);
 }
 
+/* The offset of the SeekHead is returned in *pointer. */
+int mk_writeSeek(mk_Writer *w, off_t *pointer) {
+  mk_Context  *c, *s;
+  off_t   seekhead_ptr;
+
+  if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
+    return -1;
+  if (pointer != NULL)
+    seekhead_ptr = ftell(w->fp);
+  if (w->seek_data.seekhead) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x114d9b74)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.seekhead)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  if (w->seek_data.segmentinfo) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x1549a966)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.segmentinfo)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  if (w->seek_data.tracks) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x1654ae6b)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.tracks)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  if (w->seek_data.cues) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x1c53bb6b)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.cues)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  if (w->seek_data.attachments) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x1941a469)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.attachments)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  if (w->seek_data.chapters) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x1043a770)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.chapters)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  if (w->seek_data.tags) {
+    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+      return -1;
+    CHECK(mk_writeUInt(s, 0x53ab, 0x1254c367)); // SeekID
+    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.tags)); // SeekPosition
+    CHECK(mk_closeContext(s, 0));
+  }
+  CHECK(mk_closeContext(c, 0));
+
+  if (pointer != NULL)
+    *pointer = seekhead_ptr;
+
+  return 0;
+}
+
 int   mk_close(mk_Writer *w) {
   int   i, ret = 0;
-  int   def_duration = 0;
-  mk_Context *c, *s, *e;
   mk_Track *tk;
-  mk_Chapter *chapter;
-  
+
   for (i = w->num_tracks - 1; i >= 0; i--)
   {
     tk = w->tracks_arr[i];
@@ -515,88 +582,60 @@ int   mk_close(mk_Writer *w) {
   if (mk_closeCluster(w) < 0)
     ret = -1;
 
-  mk_writeChapters(w);
-  CHECK(mk_flushContextData(w->root));    // FIXME: Don't use CHECK here!
+  if (w->chapters != NULL)
+  {
+    w->seek_data.chapters = ftell(w->fp) - w->segment_ptr;
+    mk_writeChapters(w);
+    if (mk_flushContextData(w->root) < 0)
+      ret = -1;
+  }
 
   w->seek_data.cues = ftell(w->fp) - w->segment_ptr;
   if (w->cue_point.context != NULL)
-    CHECK(mk_closeContext(w->cue_point.context, 0));
-  CHECK(mk_closeContext(w->cues, 0));
-  CHECK(mk_flushContextData(w->root));
+    if (mk_closeContext(w->cue_point.context, 0) < 0)
+      ret = -1;
+  if (mk_closeContext(w->cues, 0) < 0)
+    ret = -1;
+  if (mk_flushContextData(w->root) < 0)
+    ret = -1;
 
   if (w->wrote_header) {
-    if ((c = mk_createContext(w, w->root, 0x114d9b74)) != NULL) { // SeekHead
-      w->seek_data.seekhead = ftell(w->fp) - w->segment_ptr;
-      if (w->seek_data.segmentinfo) {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
-          if (mk_writeUInt(s, 0x53ab, 0x1549a966) < 0) // SeekID
-            ret = -1;
-          if (mk_writeUInt(s, 0x53ac, w->seek_data.segmentinfo) < 0) // SeekPosition
-            ret = -1;
-          if (mk_closeContext(s, 0) < 0)
-            ret = -1;
-        }
-      }
-      if (w->seek_data.tracks) {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) {// Seek
-          if (mk_writeUInt(s, 0x53ab, 0x1654ae6b) < 0) // SeekID
-            ret = -1;
-          if (mk_writeUInt(s, 0x53ac, w->seek_data.tracks) < 0) // SeekPosition
-            ret = -1;
-          if (mk_closeContext(s, 0) < 0)
-            ret = -1;
-        }
-      }
-      if (w->seek_data.cues) {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
-          if (mk_writeUInt(s, 0x53ab, 0x1c53bb6b) < 0) // SeekID
-            ret = -1;
-          if (mk_writeUInt(s, 0x53ac, w->seek_data.cues) < 0) // SeekPosition
-            ret = -1;
-          if (mk_closeContext(s, 0) < 0)
-            ret = -1;
-        }
-      }
-      if (w->seek_data.attachments) {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
-          if (mk_writeUInt(s, 0x53ab, 0x1941a469) < 0) // SeekID
-            ret = -1;
-          if (mk_writeUInt(s, 0x53ac, w->seek_data.attachments) < 0) // SeekPosition
-            ret = -1;
-          if (mk_closeContext(s, 0) < 0)
-            ret = -1;
-        }
-      }
-      if (w->seek_data.chapters) {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
-          if (mk_writeUInt(s, 0x53ab, 0x1043a770) < 0) // SeekID
-            ret = -1;
-          if (mk_writeUInt(s, 0x53ac, w->seek_data.chapters) < 0) // SeekPosition
-            ret = -1;
-          if (mk_closeContext(s, 0) < 0)
-          ret = -1;
-        }
-      }
-      if (w->seek_data.tags) {
-        if ((s = mk_createContext(w, c, 0x4dbb)) != NULL) { // Seek
-          if (mk_writeUInt(s, 0x53ab, 0x1254c367) < 0) // SeekID
-            ret = -1;
-          if (mk_writeUInt(s, 0x53ac, w->seek_data.tags) < 0) // SeekPosition
-            ret = -1;
-          if (mk_closeContext(s, 0) < 0)
-            ret = -1;
-        }
-      }
-      if (mk_closeContext(c, 0) < 0)
+    if (w->vlc_compat)
+      fseek(w->fp, w->segment_ptr, SEEK_SET);
+
+    if (mk_writeSeek(w, &w->seek_data.seekhead) < 0)
+      ret = -1;
+    w->seek_data.seekhead -= w->segment_ptr;
+
+    if (w->vlc_compat)
+    {
+      if (mk_flushContextData(w->root) < 0)
+        ret = -1;
+      if (mk_writeVoid(w->root, (256 - (ftell(w->fp) - w->segment_ptr))) < 0)
         ret = -1;
     }
+
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
 
-    fseek(w->fp, w->seekhead_ptr, SEEK_SET);
-    if (mk_writeUInt(w->root, 0x53ac, w->seek_data.seekhead) < 0 ||
-        mk_flushContextData(w->root) < 0)
-      ret = -1;
+    if (!w->vlc_compat)
+    {
+      int i = w->seek_data.segmentinfo;
+      w->seek_data.segmentinfo = 0;
+      w->seek_data.tracks = 0;
+      w->seek_data.cues = 0;
+      w->seek_data.chapters = 0;
+      w->seek_data.attachments = 0;
+      w->seek_data.tags = 0;
+      fseek(w->fp, w->segment_ptr, SEEK_SET);
+      if (mk_writeSeek(w, NULL) < 0 ||
+          mk_flushContextData(w->root) < 0)
+        ret = -1;
+      if (((i + w->segment_ptr) - ftell(w->fp) - 2) > 1)
+        if (mk_writeVoid(w->root, (i + w->segment_ptr) - ftell(w->fp) - 2) < 0 ||
+            mk_flushContextData(w->root) < 0)
+          ret = -1;
+    }
 
     fseek(w->fp, w->duration_ptr, SEEK_SET);
     if (mk_writeFloatRaw(w->root, (float)((double)(w->tracks_arr[0]->max_frame_tc+w->def_duration) / w->timescale)) < 0 ||

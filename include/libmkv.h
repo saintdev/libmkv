@@ -112,13 +112,15 @@ struct mk_TrackConfig_s {
   } audio;
 };
 
-mk_Writer *mk_createWriter(const char *filename, int64_t timescale);
+mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_compat);
+    /* vlc_compat writes the Seek entries at the top of the file because VLC stops parsing  *
+     * once it finds the first cluster. However, this creates extra overhead in the file.   */
 mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc);
 int  mk_writeHeader(mk_Writer *w, const char *writingApp);
 int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned size);
 int  mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, int keyframe);
-int  mk_createChapterSimple(mk_Writer *w, unsigned start, unsigned end, char *name);
+int  mk_createChapterSimple(mk_Writer *w, uint64_t start, uint64_t end, char *name);
 int  mk_close( mk_Writer *w );
 
 #ifdef __cplusplus

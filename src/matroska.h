@@ -46,12 +46,11 @@ struct mk_Context_s {
 struct mk_Writer_s {
   FILE            *fp;
 
-  uint32_t        duration_ptr;
-  uint32_t        seekhead_ptr;
-  uint32_t        segment_ptr;
+  off_t        duration_ptr;
+  off_t        seekhead_ptr;
+  off_t        segment_ptr;
 
   mk_Context      *root;
-//  mk_Context      *cluster;
   mk_Context      *freelist;
   mk_Context      *actlist;
   mk_Context      *chapters;
@@ -59,9 +58,8 @@ struct mk_Writer_s {
   mk_Context      *tracks;
   mk_Context      *cues;
 
-  int64_t         def_duration;
-  int64_t         timescale;
-//  int64_t         cluster_tc_scaled;
+  uint64_t         def_duration;
+  uint64_t         timescale;
 
   uint8_t         wrote_header;
 
@@ -69,13 +67,13 @@ struct mk_Writer_s {
   mk_Track        **tracks_arr;
 
   struct {
-    uint32_t       segmentinfo;
-    uint32_t       seekhead;
-    uint32_t       tracks;
-    uint32_t       cues;
-    uint32_t       chapters;
-    uint32_t       attachments;
-    uint32_t       tags;
+    off_t       segmentinfo;
+    off_t       seekhead;
+    off_t       tracks;
+    off_t       cues;
+    off_t       chapters;
+    off_t       attachments;
+    off_t       tags;
   } seek_data;
 
   struct {
@@ -90,10 +88,13 @@ struct mk_Writer_s {
     uint64_t      pointer;
     int64_t       tc_scaled;
   } cluster;
+
+  int chapter_uid;
+  uint8_t vlc_compat;
 };
 
 struct mk_Track_s {
-  int             track_id;
+  uint8_t         track_id;
 
   mk_Context      *frame;
   int64_t         frame_tc;
@@ -111,8 +112,8 @@ int  mk_writeFloat(mk_Context *c, unsigned id, float f);
 int  mk_writeStr(mk_Context *c, unsigned id, const char *str);
 int  mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
 int  mk_flushContextData(mk_Context *c);
-int  mk_closeContext(mk_Context *c, unsigned *off);
-
+int  mk_closeContext(mk_Context *c, off_t *off);
+int  mk_writeSeek(mk_Writer *w, off_t *pointer);
 int  mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int  mk_writeChapters(mk_Writer *w);
 

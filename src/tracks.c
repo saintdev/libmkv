@@ -25,6 +25,8 @@
 #include "matroska.h"
 #include "config.h"
 
+/* TODO: Figure out what can actually fail without damaging the track. */
+
 mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 {
   mk_Context *ti, *v;
@@ -33,75 +35,105 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
   if (track == NULL)
     return NULL;
 
-  w->tracks_arr = realloc(w->tracks_arr, (w->num_tracks + 1) * sizeof(mk_Track *)); // FIXME: Check return!
+  if ((w->tracks_arr = realloc(w->tracks_arr, (w->num_tracks + 1) * sizeof(mk_Track *))) == NULL)
+    return NULL; // FIXME
   w->tracks_arr[w->num_tracks] = track;
   track->track_id = ++w->num_tracks;
 
   if (w->tracks == NULL)
   {
     if ((w->tracks = mk_createContext(w, w->root, 0x1654ae6b)) == NULL) // tracks
-      return -1;
+      return NULL;
   }
 
   if ((ti = mk_createContext(w, w->tracks, 0xae)) == NULL) // TrackEntry
-    return -1;
-  CHECK(mk_writeUInt(ti, 0xd7, track->track_id)); // TrackNumber
+    return NULL;
+  if (mk_writeUInt(ti, 0xd7, track->track_id) < 0) // TrackNumber
+    return NULL;
   if (tc->trackUID)
-    CHECK(mk_writeUInt(ti, 0x73c5, tc->trackUID)); // TrackUID
+  {
+    if (mk_writeUInt(ti, 0x73c5, tc->trackUID) < 0) // TrackUID
+      return NULL;
+  }
   else
-    CHECK(mk_writeUInt(ti, 0x73c5, track->track_id));
-  CHECK(mk_writeUInt(ti, 0x83, tc->trackType)); // TrackType
-  CHECK(mk_writeUInt(ti, 0x9c, tc->flagLacing)); // FlagLacing
-  CHECK(mk_writeStr(ti, 0x86, tc->codecID)); // CodecID
+  {
+    if (mk_writeUInt(ti, 0x73c5, track->track_id) < 0)
+      return NULL;
+  }
+  if (mk_writeUInt(ti, 0x83, tc->trackType) < 0) // TrackType
+    return NULL;
+  if (mk_writeUInt(ti, 0x9c, tc->flagLacing) < 0) // FlagLacing
+    return NULL;
+  if (mk_writeStr(ti, 0x86, tc->codecID) < 0) // CodecID
+    return NULL;
   if (tc->codecPrivateSize && (tc->codecPrivate != NULL))
-    CHECK(mk_writeBin(ti, 0x63a2, tc->codecPrivate, tc->codecPrivateSize)); // CodecPrivate
+    if (mk_writeBin(ti, 0x63a2, tc->codecPrivate, tc->codecPrivateSize) < 0) // CodecPrivate
+      return NULL;
   if (tc->defaultDuration) {
-    CHECK(mk_writeUInt(ti, 0x23e383, tc->defaultDuration));
+    if (mk_writeUInt(ti, 0x23e383, tc->defaultDuration) < 0)
+      return NULL;
     track->default_duration = tc->defaultDuration;
   }
   if (tc->language)
-    CHECK(mk_writeStr(ti, 0x22b59c, tc->language));  // Language
-  CHECK(mk_writeUInt(ti, 0xb9, tc->flagEnabled)); // FlagEnabled
-  CHECK(mk_writeUInt(ti, 0xbb, tc->flagDefault)); // FlagDefault
+    if (mk_writeStr(ti, 0x22b59c, tc->language) < 0)  // Language
+      return NULL;
+  if (mk_writeUInt(ti, 0xb9, tc->flagEnabled) < 0) // FlagEnabled
+    return NULL;
+  if (mk_writeUInt(ti, 0x88, tc->flagDefault) < 0) // FlagDefault
+    return NULL;
   if (tc->flagForced)
-    CHECK(mk_writeUInt(ti, 0x55aa, tc->flagForced)); // FlagForced
+    if (mk_writeUInt(ti, 0x55aa, tc->flagForced) < 0) // FlagForced
+      return NULL;
   if (tc->minCache)
-    CHECK(mk_writeUInt(ti, 0x6de7, tc->minCache)); // MinCache
+    if (mk_writeUInt(ti, 0x6de7, tc->minCache) < 0) // MinCache
+      return NULL;
   /* FIXME: this won't handle NULL values, which signals that the cache is disabled. */
   if (tc->maxCache)
-    CHECK(mk_writeUInt(ti, 0x6df8, tc->maxCache)); // MaxCache
+    if (mk_writeUInt(ti, 0x6df8, tc->maxCache) < 0) // MaxCache
+      return NULL;
 
   switch (tc->trackType)
   {
     case MK_TRACK_VIDEO:    // Video
       if ((v = mk_createContext(w, ti, 0xe0)) == NULL)
-        return -1;
+        return NULL;
       if (tc->video.pixelCrop[0] != 0 || tc->video.pixelCrop[1] != 0 || tc->video.pixelCrop[2] != 0 || tc->video.pixelCrop[3] != 0) {
         for (i = 0; i < 4; i++) {
-          CHECK(mk_writeUInt(v, 0x54aa + (i * 0x11), tc->video.pixelCrop[i])); // PixelCrop
+          if (mk_writeUInt(v, 0x54aa + (i * 0x11), tc->video.pixelCrop[i]) < 0) // PixelCrop
+            return NULL;
         }
       }
-      CHECK(mk_writeUInt(v, 0xb0, tc->video.pixelWidth)); // PixelWidth
-      CHECK(mk_writeUInt(v, 0xba, tc->video.pixelHeight)); // PixelHeight
-      CHECK(mk_writeUInt(v, 0x54b0, tc->video.displayWidth)); // DisplayWidth
-      CHECK(mk_writeUInt(v, 0x54ba, tc->video.displayHeight)); // DisplayHeight
+      if (mk_writeUInt(v, 0xb0, tc->video.pixelWidth) < 0) // PixelWidth
+        return NULL;
+      if (mk_writeUInt(v, 0xba, tc->video.pixelHeight) < 0 ) // PixelHeight
+        return NULL;
+      if (mk_writeUInt(v, 0x54b0, tc->video.displayWidth) < 0) // DisplayWidth
+        return NULL;
+      if (mk_writeUInt(v, 0x54ba, tc->video.displayHeight) < 0) // DisplayHeight
+        return NULL;
       if (tc->video.displayUnit)
-        CHECK(mk_writeUInt(v, 0x54b2, tc->video.displayUnit)); // DisplayUnit
+        if (mk_writeUInt(v, 0x54b2, tc->video.displayUnit) < 0) // DisplayUnit
+          return NULL;
       break;
     case MK_TRACK_AUDIO:    // Audio
       if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
-        return -1;
-      CHECK(mk_writeFloat(v, 0xb5, tc->audio.samplingFreq)); // SamplingFrequency
-      CHECK(mk_writeUInt(v, 0x9f, tc->audio.channels)); // Channels
+        return NULL;
+      if (mk_writeFloat(v, 0xb5, tc->audio.samplingFreq) < 0) // SamplingFrequency
+        return NULL;
+      if (mk_writeUInt(v, 0x9f, tc->audio.channels) < 0) // Channels
+        return NULL;
       if (tc->audio.bitDepth)
-        CHECK(mk_writeUInt(v, 0x6264, tc->audio.bitDepth)); // BitDepth
+        if (mk_writeUInt(v, 0x6264, tc->audio.bitDepth) < 0) // BitDepth
+          return NULL;
       break;
-    default:                // Other
-      return -1;
+    default:                // Other TODO: Implement other track types.
+      return NULL;
   }
 
-  CHECK(mk_closeContext(v, 0));
-  CHECK(mk_closeContext(ti, 0));
+  if (mk_closeContext(v, 0) < 0)
+    return NULL;
+  if (mk_closeContext(ti, 0) < 0)
+    return NULL;
 
   return track;
 }
