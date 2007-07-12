@@ -87,26 +87,38 @@ static int    mk_writeID(mk_Context *c, unsigned id) {
   return mk_appendContextData(c, c_id+3, 1);
 }
 
-static int    mk_writeSize(mk_Context *c, unsigned size) {
-  unsigned char   c_size[5] = { 0x08, size >> 24, size >> 16, size >> 8, size };
+static int    mk_writeSize(mk_Context *c, uint64_t size) {
+  unsigned char   c_size[8] = { 0x01, size >> 48, size >> 40, size >> 32, size >> 24, size >> 16, size >> 8, size };
 
   if (size < 0x7f) {
-    c_size[4] |= 0x80;
-    return mk_appendContextData(c, c_size+4, 1);
+    c_size[7] |= 0x80;
+    return mk_appendContextData(c, c_size+7, 1);
   }
   if (size < 0x3fff) {
-    c_size[3] |= 0x40;
-    return mk_appendContextData(c, c_size+3, 2);
+    c_size[6] |= 0x40;
+    return mk_appendContextData(c, c_size+6, 2);
   }
   if (size < 0x1fffff) {
-    c_size[2] |= 0x20;
-    return mk_appendContextData(c, c_size+2, 3);
+    c_size[5] |= 0x20;
+    return mk_appendContextData(c, c_size+5, 3);
   }
   if (size < 0x0fffffff) {
-    c_size[1] |= 0x10;
-    return mk_appendContextData(c, c_size+1, 4);
+    c_size[4] |= 0x10;
+    return mk_appendContextData(c, c_size+4, 4);
   }
-  return mk_appendContextData(c, c_size, 5);
+  if (size < 0x07ffffffff) {
+    c_size[3] |= 0x08;
+    return mk_appendContextData(c, c_size+3, 5);
+  }
+  if (size < 0x03ffffffffff) {
+    c_size[2] |= 0x04;
+    return mk_appendContextData(c, c_size+2, 6);
+  }
+  if (size < 0x01ffffffffffff) {
+    c_size[1] |= 0x02;
+    return mk_appendContextData(c, c_size+1, 7);
+  }
+  return mk_appendContextData(c, c_size, 9);
 }
 
 static int    mk_flushContextID(mk_Context *c) {
@@ -253,7 +265,7 @@ static int    mk_writeVoid(mk_Context *c, unsigned length) {
   return 0;
 }
 
-static unsigned   mk_ebmlSizeSize(unsigned s) {
+static unsigned   mk_ebmlSizeSize(uint64_t s) {
   if (s < 0x7f)
     return 1;
   if (s < 0x3fff)
@@ -262,7 +274,13 @@ static unsigned   mk_ebmlSizeSize(unsigned s) {
     return 3;
   if (s < 0x0fffffff)
     return 4;
-  return 5;
+  if (s < 0x07ffffffff)
+    return 5;
+  if (s < 0x03ffffffffff)
+    return 6;
+  if (s < 0x01ffffffffffff)
+    return 7;
+  return 8
 }
 
 static unsigned   mk_ebmlSIntSize(int64_t si) {
