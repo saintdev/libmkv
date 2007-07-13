@@ -665,14 +665,18 @@ int mk_writeSeek(mk_Writer *w, off_t *pointer) {
 int   mk_close(mk_Writer *w) {
   int   i, ret = 0;
   mk_Track *tk;
+  int64_t max_frame_tc = w->tracks_arr[0]->max_frame_tc;
 
   for (i = w->num_tracks - 1; i >= 0; i--)
   {
     tk = w->tracks_arr[i];
+    w->tracks_arr[i] = NULL;
     if (mk_flushFrame(w, tk) < 0)
       ret = -1;
+    free(tk);
+    tk = NULL;
   }
-  
+
   if (mk_closeCluster(w) < 0)
     ret = -1;
 
@@ -732,11 +736,13 @@ int   mk_close(mk_Writer *w) {
     }
 
     fseek(w->fp, w->duration_ptr, SEEK_SET);
-    if (mk_writeFloatRaw(w->root, (float)((double)(w->tracks_arr[0]->max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
+    if (mk_writeFloatRaw(w->root, (float)((double)(max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
         mk_flushContextData(w->root) < 0)
       ret = -1;
   }
 
+  if (mk_closeContext(w->root) < 1)
+    ret = -1;
   mk_destroyContexts(w);
   fclose(w->fp);
   free(w->tracks_arr);
