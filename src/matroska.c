@@ -152,7 +152,7 @@ static int    mk_writeSSize(mk_Context *c, int64_t size) {
       return -1;
   }
 
-  return mk_writeSize(c, u_size);
+  return mk_writeSize(c, size);
 }
 
 static int    mk_flushContextID(mk_Context *c) {
