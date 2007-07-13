@@ -122,7 +122,7 @@ static int    mk_writeSize(mk_Context *c, uint64_t size) {
 }
 
 static int    mk_writeSSize(mk_Context *c, int64_t size) {
-  uint64_t    u_size = llabs(size);
+  uint64_t    u_size = (uint64_t)llabs(size);
   unsigned    size_size = mk_ebmlSizeSize( u_size << 1 ); // We need to shift by one to get the correct size here.
 
   switch (size_size)
@@ -314,7 +314,7 @@ static unsigned   mk_ebmlSizeSize(uint64_t s) {
     return 6;
   if (s < 0x01ffffffffffff)
     return 7;
-  return 8
+  return 8;
 }
 
 static unsigned   mk_ebmlSIntSize(int64_t si) {
@@ -441,12 +441,12 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   if (!track->in_frame)
     return 0;
 
-  delta = track->frame_tc/w->timescale - w->cluster.tc_scaled;
+  delta = track->frame.timecode/w->timescale - w->cluster.tc_scaled;
   if (delta > 32767ll || delta < -32768ll)
     CHECK(mk_closeCluster(w));
 
   if (w->cluster.context == NULL) {
-    w->cluster.tc_scaled = track->frame_tc / w->timescale;
+    w->cluster.tc_scaled = track->frame.timecode / w->timescale;
     w->cluster.context = mk_createContext(w, w->root, 0x1f43b675); // Cluster
     if (w->cluster.context == NULL)
       return -1;
@@ -464,9 +464,9 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     }
   }
 
-  fsize = track->frame ? track->frame->d_cur : 0;
+  fsize = track->frame.data ? track->frame.data->d_cur : 0;
   bgsize = fsize + 4 + mk_ebmlSizeSize(fsize + 4) + 1;
-  if (!track->keyframe) {
+  if (!track->frame.keyframe) {
     ref = track->prev_frame_tc_scaled - w->cluster.tc_scaled - delta;
     bgsize += 1 + 1 + mk_ebmlSIntSize(ref);
   }
@@ -484,22 +484,27 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   CHECK(mk_appendContextData(w->cluster.context, c_delta_flags, 2));
 
   flags = ( track->frame.keyframe << 8 ) | track->frame.lacing;
-  CHECK(mk_appendContextData(w->cluster.context, flags, 1));
+  CHECK(mk_appendContextData(w->cluster.context, &flags, 1));
   if (track->frame.lacing) {
-    CHECK(mk_appendContextData(w->cluster.context, track->frame.lacing_num_frames, 1));
+    CHECK(mk_appendContextData(w->cluster.context, &track->frame.lacing_num_frames, 1));
     switch (track->frame.lacing) {
       case MK_LACING_XIPH:
-        for (i = 0; i < track->frame.lacing_num_frames; i++)
         {
-          for (j = track->frame.lacing_sizes[i]; j >= 255 ; j -= 255)
+          unsigned i, j;
+          uint8_t xiph_size = 255;
+          for (i = 0; i < track->frame.lacing_num_frames; i++)
           {
-            CHECK(mk_appendContextData(w->cluster.context, 255, 1));
+            for (j = track->frame.lacing_sizes[i]; j >= 255 ; j -= 255)
+            {
+              CHECK(mk_appendContextData(w->cluster.context, &xiph_size, 1));
+            }
+            xiph_size = j;
+            CHECK(mk_appendContextData(w->cluster.context, &xiph_size, 1));
           }
-          CHECK(mk_appendContextData(w->cluster.context, j, 1));
         }
         break;
       case MK_LACING_EBML:
-        mk_writeSize(w->cluster.context, track->frame.sizes[0], 1);
+        mk_writeSize(w->cluster.context, track->frame.lacing_sizes[0]);
         for (i = 1; i < track->frame.lacing_num_frames; i++)
         {
           CHECK(mk_writeSSize(w->cluster.context, track->frame.lacing_sizes[i] - track->frame.lacing_sizes[i-1]));
@@ -508,15 +513,15 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     }
   }
 
-  if (track->frame) {
-    CHECK(mk_appendContextData(w->cluster.context, track->frame->data, track->frame->d_cur));
-    track->frame->d_cur = 0;
+  if (track->frame.data) {
+    CHECK(mk_appendContextData(w->cluster.context, track->frame.data->data, track->frame.data->d_cur));
+    track->frame.data->d_cur = 0;
   }
-  if (!track->keyframe)
+  if (!track->frame.keyframe)
     CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
 
-  if (track->cue_flag && track->keyframe) {
-    if (w->cue_point.timecode != track->frame_tc) {
+  if (track->cue_flag && track->frame.keyframe) {
+    if (w->cue_point.timecode != track->frame.timecode) {
       if (w->cue_point.context != NULL) {
         CHECK(mk_closeContext(w->cue_point.context, 0));
         w->cue_point.context = NULL;
@@ -525,8 +530,8 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     if (w->cue_point.context == NULL) {
       if ((w->cue_point.context = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
         return -1;
-      CHECK(mk_writeUInt(w->cue_point.context, 0xb3, track->frame_tc)); // CueTime
-      w->cue_point.timecode = track->frame_tc;
+      CHECK(mk_writeUInt(w->cue_point.context, 0xb3, track->frame.timecode)); // CueTime
+      w->cue_point.timecode = track->frame.timecode;
     }
 
     if ((c = mk_createContext(w, w->cue_point.context, 0xb7)) == NULL)  // CueTrackPositions
@@ -564,8 +569,8 @@ int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigne
   if (!track->in_frame)
     return -1;
 
-  track->frame_tc = timestamp;
-  track->keyframe = keyframe != 0;
+  track->frame.timecode = timestamp;
+  track->frame.keyframe = keyframe != 0;
 
   if (track->max_frame_tc < timestamp)
     track->max_frame_tc = timestamp;
@@ -573,14 +578,14 @@ int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigne
   return 0;
 }
 
-int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, uint8_t lacing, uint8_t num_frames, uint32_t *sizes[])
-{
+int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, uint8_t lacing, uint8_t num_frames, uint32_t sizes[]) {
   if (!track->in_frame)
     return -1;
+  track->frame.lacing_sizes = calloc(num_frames, sizeof(uint32_t));
 
   track->frame.lacing = lacing;
   track->frame.lacing_num_frames = num_frames;
-  track->frame.lacing_sizes = sizes;
+  memcpy(track->frame.lacing_sizes, sizes, num_frames);
 
   return 0;
 }
@@ -589,11 +594,11 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
   if (!track->in_frame)
     return -1;
 
-  if (track->frame == NULL)
-    if ((track->frame = mk_createContext(w, NULL, 0)) == NULL)
+  if (track->frame.data == NULL)
+    if ((track->frame.data = mk_createContext(w, NULL, 0)) == NULL)
       return -1;
 
-  return mk_appendContextData(track->frame, data, size);
+  return mk_appendContextData(track->frame.data, data, size);
 }
 
 /* The offset of the SeekHead is returned in *pointer. */
@@ -741,7 +746,7 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
   }
 
-  if (mk_closeContext(w->root) < 1)
+  if (mk_closeContext(w->root, 0) < 1)
     ret = -1;
   mk_destroyContexts(w);
   fclose(w->fp);

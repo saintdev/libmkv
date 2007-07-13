@@ -111,7 +111,7 @@ struct mk_Track_s {
     uint8_t       keyframe;
     uint8_t       lacing;
     uint8_t       lacing_num_frames;
-    int32_t       *lacing_sizes[];
+    int32_t       *lacing_sizes;
   } frame;
 };
 
@@ -125,5 +125,6 @@ int  mk_closeContext(mk_Context *c, off_t *off);
 int  mk_writeSeek(mk_Writer *w, off_t *pointer);
 int  mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int  mk_writeChapters(mk_Writer *w);
+static unsigned   mk_ebmlSizeSize(uint64_t s);
 
 #endif
