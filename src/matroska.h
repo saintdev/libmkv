@@ -96,14 +96,23 @@ struct mk_Writer_s {
 struct mk_Track_s {
   uint8_t         track_id;
 
-  mk_Context      *frame;
-  int64_t         frame_tc;
+//  mk_Context      *frame;
+//  int64_t         frame_tc;
   int64_t         prev_frame_tc_scaled;
   int64_t         max_frame_tc;
   uint8_t         in_frame;
-  uint8_t         keyframe;
+//  uint8_t         keyframe;
   uint64_t        default_duration;
   uint8_t         cue_flag;
+
+  struct {
+    mk_Context    *data;
+    int64_t       timecode;
+    uint8_t       keyframe;
+    uint8_t       lacing;
+    uint8_t       lacing_num_frames;
+    int32_t       *lacing_sizes[];
+  } frame;
 };
 
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);

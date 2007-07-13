@@ -434,7 +434,8 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   mk_Context *c;
   int64_t   delta, ref = 0;
   unsigned  fsize, bgsize;
-  unsigned char c_delta_flags[3];
+  uint8_t   c_delta_flags[2];
+  uint8_t   flags;
   int i;
 
   if (!track->in_frame)
@@ -473,15 +474,40 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   CHECK(mk_writeID(w->cluster.context, 0xa0)); // BlockGroup
   CHECK(mk_writeSize(w->cluster.context, bgsize));
   CHECK(mk_writeID(w->cluster.context, 0xa1)); // Block
-  CHECK(mk_writeSize(w->cluster.context, fsize + 4));
+  CHECK(mk_writeSize(w->cluster.context, fsize + 4)); //FIXME: Size is incorrect if we're using lacing!
   CHECK(mk_writeSize(w->cluster.context, track->track_id)); // track number
 
   w->cluster.block_count++;
 
   c_delta_flags[0] = delta >> 8;
   c_delta_flags[1] = delta;
-  c_delta_flags[2] = 0;
-  CHECK(mk_appendContextData(w->cluster.context, c_delta_flags, 3));
+  CHECK(mk_appendContextData(w->cluster.context, c_delta_flags, 2));
+
+  flags = ( track->frame.keyframe << 8 ) | track->frame.lacing;
+  CHECK(mk_appendContextData(w->cluster.context, flags, 1));
+  if (track->frame.lacing) {
+    CHECK(mk_appendContextData(w->cluster.context, track->frame.lacing_num_frames, 1));
+    switch (track->frame.lacing) {
+      case MK_LACING_XIPH:
+        for (i = 0; i < track->frame.lacing_num_frames; i++)
+        {
+          for (j = track->frame.lacing_sizes[i]; j >= 255 ; j -= 255)
+          {
+            CHECK(mk_appendContextData(w->cluster.context, 255, 1));
+          }
+          CHECK(mk_appendContextData(w->cluster.context, j, 1));
+        }
+        break;
+      case MK_LACING_EBML:
+        mk_writeSize(w->cluster.context, track->frame.sizes[0], 1);
+        for (i = 1; i < track->frame.lacing_num_frames; i++)
+        {
+          CHECK(mk_writeSSize(w->cluster.context, track->frame.lacing_sizes[i] - track->frame.lacing_sizes[i-1]));
+        }
+        break;
+    }
+  }
+
   if (track->frame) {
     CHECK(mk_appendContextData(w->cluster.context, track->frame->data, track->frame->d_cur));
     track->frame->d_cur = 0;
@@ -525,12 +551,16 @@ int   mk_startFrame(mk_Writer *w, mk_Track *track) {
     return -1;
 
   track->in_frame = 1;
-  track->keyframe = 0;
+//   track->keyframe = 0;
+  track->frame.keyframe = 0;
+  track->frame.lacing = MK_LACING_NONE;
+  track->frame.lacing_num_frames = 0;
+  track->frame.lacing_sizes = NULL;
 
   return 0;
 }
 
-int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, int keyframe) {
+int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe) {
   if (!track->in_frame)
     return -1;
 
@@ -539,6 +569,18 @@ int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, int key
 
   if (track->max_frame_tc < timestamp)
     track->max_frame_tc = timestamp;
+
+  return 0;
+}
+
+int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, uint8_t lacing, uint8_t num_frames, uint32_t *sizes[])
+{
+  if (!track->in_frame)
+    return -1;
+
+  track->frame.lacing = lacing;
+  track->frame.lacing_num_frames = num_frames;
+  track->frame.lacing_sizes = sizes;
 
   return 0;
 }
