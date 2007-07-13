@@ -121,6 +121,40 @@ static int    mk_writeSize(mk_Context *c, uint64_t size) {
   return mk_appendContextData(c, c_size, 9);
 }
 
+static int    mk_writeSSize(mk_Context *c, int64_t size) {
+  uint64_t    u_size = llabs(size);
+  unsigned    size_size = mk_ebmlSizeSize( u_size << 1 ); // We need to shift by one to get the correct size here.
+
+  switch (size_size)
+  {
+    case 1:
+      size += 0x3f;
+      break;
+    case 2:
+      size += 0x1fff;
+      break;
+    case 3:
+      size += 0x0fffff;
+      break;
+    case 4:
+      size += 0x07ffffff;
+      break;
+    case 5:
+      size += 0x03ffffffff;
+      break;
+    case 6:
+      size += 0x01ffffffffff;
+      break;
+    case 7:
+      size += 0x00ffffffffffff;
+      break;
+    default:    // Matroska currently doesn't support any int > 56-bit.
+      return -1;
+  }
+
+  return mk_writeSize(c, u_size);
+}
+
 static int    mk_flushContextID(mk_Context *c) {
   unsigned char size_undf[8] = {0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
