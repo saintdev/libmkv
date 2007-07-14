@@ -306,9 +306,9 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
 }
 
 /* The offset of the SeekHead is returned in *pointer. */
-int mk_writeSeek(mk_Writer *w, off_t *pointer) {
+int mk_writeSeek(mk_Writer *w, int64_t *pointer) {
   mk_Context  *c, *s;
-  off_t   seekhead_ptr;
+  int64_t   seekhead_ptr;
 
   if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
     return -1;

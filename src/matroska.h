@@ -46,9 +46,9 @@ struct mk_Context_s {
 struct mk_Writer_s {
   FILE            *fp;
 
-  off_t        duration_ptr;
-  off_t        seekhead_ptr;
-  off_t        segment_ptr;
+  int64_t        duration_ptr;
+  int64_t        seekhead_ptr;
+  int64_t        segment_ptr;
 
   mk_Context      *root;
   mk_Context      *freelist;
@@ -67,13 +67,13 @@ struct mk_Writer_s {
   mk_Track        **tracks_arr;
 
   struct {
-    off_t       segmentinfo;
-    off_t       seekhead;
-    off_t       tracks;
-    off_t       cues;
-    off_t       chapters;
-    off_t       attachments;
-    off_t       tags;
+    int64_t       segmentinfo;
+    int64_t       seekhead;
+    int64_t       tracks;
+    int64_t       cues;
+    int64_t       chapters;
+    int64_t       attachments;
+    int64_t       tags;
   } seek_data;
 
   struct {
@@ -123,7 +123,7 @@ int         mk_writeSize(mk_Context *c, uint64_t size);
 int         mk_writeSSize(mk_Context *c, int64_t size);
 int         mk_flushContextID(mk_Context *c);
 int         mk_flushContextData(mk_Context *c);
-int         mk_closeContext(mk_Context *c, off_t *off);
+int         mk_closeContext(mk_Context *c, int64_t *off);
 void        mk_destroyContexts(mk_Writer *w);
 int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
 int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
@@ -142,8 +142,8 @@ int         mk_writeFloat(mk_Context *c, unsigned id, float f);
 int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
 int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
 int         mk_flushContextData(mk_Context *c);
-int         mk_closeContext(mk_Context *c, off_t *off);
-int         mk_writeSeek(mk_Writer *w, off_t *pointer);
+int         mk_closeContext(mk_Context *c, int64_t *off);
+int         mk_writeSeek(mk_Writer *w, int64_t *pointer);
 int         mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int         mk_writeChapters(mk_Writer *w);
 
