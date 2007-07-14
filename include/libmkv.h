@@ -129,6 +129,8 @@ int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, uint8_t lacing, uint8_t n
 int  mk_createChapterSimple(mk_Writer *w, uint64_t start, uint64_t end, char *name);
 int  mk_close( mk_Writer *w );
 
+char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size);
+
 #ifdef __cplusplus
 }
 #endif
