@@ -115,16 +115,36 @@ struct mk_Track_s {
   } frame;
 };
 
+/* EBML */
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
-int  mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
-int  mk_writeFloat(mk_Context *c, unsigned id, float f);
-int  mk_writeStr(mk_Context *c, unsigned id, const char *str);
-int  mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
-int  mk_flushContextData(mk_Context *c);
-int  mk_closeContext(mk_Context *c, off_t *off);
-int  mk_writeSeek(mk_Writer *w, off_t *pointer);
-int  mk_writeTracks(mk_Writer *w, mk_Context *tracks);
-int  mk_writeChapters(mk_Writer *w);
-static unsigned   mk_ebmlSizeSize(uint64_t s);
+int         mk_appendContextData(mk_Context *c, const void *data, unsigned size);
+int         mk_writeID(mk_Context *c, unsigned id);
+int         mk_writeSize(mk_Context *c, uint64_t size);
+int         mk_writeSSize(mk_Context *c, int64_t size);
+int         mk_flushContextID(mk_Context *c);
+int         mk_flushContextData(mk_Context *c);
+int         mk_closeContext(mk_Context *c, off_t *off);
+void        mk_destroyContexts(mk_Writer *w);
+int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
+int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
+int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
+int         mk_writeSInt(mk_Context *c, unsigned id, int64_t si);
+int         mk_writeFloatRaw(mk_Context *c, float f);
+int         mk_writeFloat(mk_Context *c, unsigned id, float f);
+unsigned    mk_ebmlSizeSize(uint64_t s);
+unsigned    mk_ebmlSIntSize(int64_t si);
+/* EBML */
+
+int         mk_writeVoid(mk_Context *c, unsigned length);
+mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
+int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
+int         mk_writeFloat(mk_Context *c, unsigned id, float f);
+int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
+int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
+int         mk_flushContextData(mk_Context *c);
+int         mk_closeContext(mk_Context *c, off_t *off);
+int         mk_writeSeek(mk_Writer *w, off_t *pointer);
+int         mk_writeTracks(mk_Writer *w, mk_Context *tracks);
+int         mk_writeChapters(mk_Writer *w);
 
 #endif
