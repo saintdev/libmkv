@@ -60,7 +60,7 @@ char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size) {
   }
 
   if (output_size != NULL)
-    *output_size = offset - 1;
+    *output_size = offset;
 
   return laced;
 }
@@ -297,7 +297,6 @@ int   mk_startFrame(mk_Writer *w, mk_Track *track) {
     return -1;
 
   track->in_frame = 1;
-//   track->keyframe = 0;
   track->frame.keyframe = 0;
   track->frame.lacing = MK_LACING_NONE;
   track->frame.lacing_num_frames = 0;
