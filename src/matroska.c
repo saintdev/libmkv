@@ -35,6 +35,36 @@ int    mk_writeVoid(mk_Context *c, unsigned length) {
   return 0;
 }
 
+char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size) {
+  unsigned i, j;
+  uint64_t offset = 0;
+  uint64_t alloc_size = num_frames * 6;  // Complete guess. We'll realloc if we need more space, though.
+  char *laced = calloc(alloc_size, sizeof(char));
+  if (laced == NULL)
+    return NULL;
+  
+  laced[offset++] = num_frames;
+  for (i = 0; i < num_frames; i++)
+  {
+    for (j = sizes[i]; j >= 255 ; j -= 255)
+    {
+      laced[offset++] = 255;
+      if (offset + 1 >= alloc_size) {
+        int avg_sz = offset / (i - 1);  // Compute approximate average bytes/frame
+        alloc_size += avg_sz * (num_frames - i);  // Add our average + number of frames left to size
+        if ((laced = realloc(laced, alloc_size)) == NULL)
+          return NULL;
+      }
+    }
+    laced[offset++] = j;
+  }
+
+  if (output_size != NULL)
+    *output_size = offset - 1;
+
+  return laced;
+}
+
 mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_compat) {
   mk_Writer *w = malloc(sizeof(*w));
   if (w == NULL)
@@ -138,9 +168,10 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   mk_Context *c;
   int64_t   delta, ref = 0;
   unsigned  fsize, bgsize;
-  uint8_t   c_delta_flags[2];
-  uint8_t   flags;
+  uint8_t   flags, c_delta_flags[2];
   int i;
+  char *laced = NULL;
+  uint64_t  length = 0;
 
   if (!track->in_frame)
     return 0;
@@ -178,7 +209,26 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   CHECK(mk_writeID(w->cluster.context, 0xa0)); // BlockGroup
   CHECK(mk_writeSize(w->cluster.context, bgsize));
   CHECK(mk_writeID(w->cluster.context, 0xa1)); // Block
-  CHECK(mk_writeSize(w->cluster.context, fsize + 4)); //FIXME: Size is incorrect if we're using lacing!
+
+  switch (track->frame.lacing) {
+    case MK_LACING_XIPH:
+      laced = mk_laceXiph(track->frame.lacing_sizes, track->frame.lacing_num_frames, &length);
+      break;
+    case MK_LACING_EBML:
+      length += mk_ebmlSizeSize(track->frame.lacing_sizes[0]) + 1;
+      for (i = 1; i < track->frame.lacing_num_frames; i++)
+        length += mk_ebmlSizeSize(track->frame.lacing_sizes[i] << 1);
+      break;
+    case MK_LACING_FIXED:
+    {
+      laced = calloc(1, sizeof(char));
+      laced[0] = track->frame.lacing_num_frames;
+      ++length;
+    }
+    break;
+  }
+  
+  CHECK(mk_writeSize(w->cluster.context, fsize + 4 + length));
   CHECK(mk_writeSize(w->cluster.context, track->track_id)); // track number
 
   w->cluster.block_count++;
@@ -190,30 +240,17 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   flags = ( track->frame.keyframe << 8 ) | track->frame.lacing;
   CHECK(mk_appendContextData(w->cluster.context, &flags, 1));
   if (track->frame.lacing) {
-    CHECK(mk_appendContextData(w->cluster.context, &track->frame.lacing_num_frames, 1));
-    switch (track->frame.lacing) {
-      case MK_LACING_XIPH:
-        {
-          unsigned i, j;
-          uint8_t xiph_size = 255;
-          for (i = 0; i < track->frame.lacing_num_frames; i++)
-          {
-            for (j = track->frame.lacing_sizes[i]; j >= 255 ; j -= 255)
-            {
-              CHECK(mk_appendContextData(w->cluster.context, &xiph_size, 1));
-            }
-            xiph_size = j;
-            CHECK(mk_appendContextData(w->cluster.context, &xiph_size, 1));
-          }
-        }
-        break;
-      case MK_LACING_EBML:
-        mk_writeSize(w->cluster.context, track->frame.lacing_sizes[0]);
-        for (i = 1; i < track->frame.lacing_num_frames; i++)
-        {
-          CHECK(mk_writeSSize(w->cluster.context, track->frame.lacing_sizes[i] - track->frame.lacing_sizes[i-1]));
-        }
-        break;
+    if (track->frame.lacing == MK_LACING_EBML) {
+      CHECK(mk_appendContextData(w->cluster.context, &track->frame.lacing_num_frames, 1));
+      CHECK(mk_writeSize(w->cluster.context, track->frame.lacing_sizes[0]));
+      for (i = 1; i < track->frame.lacing_num_frames; i++)
+      {
+        CHECK(mk_writeSSize(w->cluster.context, track->frame.lacing_sizes[i] - track->frame.lacing_sizes[i-1]));
+      }
+    } else if (length > 0 && laced != NULL) {
+      CHECK(mk_appendContextData(w->cluster.context, laced, length));
+      free(laced);
+      laced = NULL;
     }
   }
 

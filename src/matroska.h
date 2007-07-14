@@ -111,7 +111,7 @@ struct mk_Track_s {
     uint8_t       keyframe;
     uint8_t       lacing;
     uint8_t       lacing_num_frames;
-    int32_t       *lacing_sizes;
+    uint64_t      *lacing_sizes;
   } frame;
 };
 
