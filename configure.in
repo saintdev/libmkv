@@ -2,14 +2,15 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libmkv, 0.6.0, saintdev@gmail.com)
+AC_INIT(libmkv, 0.6.1, saintdev@gmail.com)
 AC_CONFIG_SRCDIR([include/libmkv.h])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(libmkv, 0.6.0)
+AM_INIT_AUTOMAKE(libmkv, 0.6.1)
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_LIBTOOL
+AC_PROG_INSTALL
 
 # Checks for libraries.
 
