@@ -25,7 +25,7 @@
 #include "matroska.h"
 #include "config.h"
 
-int    mk_writeVoid(mk_Context *c, unsigned length) {
+int    mk_writeVoid(mk_Context *c, uint64_t length) {
   char *c_void = calloc(length, sizeof(char));
 
   CHECK(mk_writeID(c, 0xec));
@@ -123,7 +123,9 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
 
   if (w->vlc_compat)
   {
-    CHECK(mk_writeVoid(w->root, 256));  // 256 bytes should be enough room for our Seek entries.
+    CHECK(mk_writeVoid(w->root, 0x100));  // 256 bytes should be enough room for our Seek entries.
+    CHECK(mk_writeVoid(w->root, 0x800)); // 2048 bytes for Chapters.
+    CHECK(mk_writeVoid(w->root, 0x1000)); // 4096 bytes for Cues.
   } else
   {
     w->seek_data.seekhead = 0x80000000;
@@ -146,7 +148,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   if (w->tracks) {
     CHECK(mk_closeContext(w->tracks, 0));
   }
-  
+
   CHECK(mk_flushContextData(w->root));
 
   w->wrote_header = 1;
@@ -186,14 +188,14 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     if (w->cluster.context == NULL)
       return -1;
 
-  w->cluster.pointer = ftell(w->fp) - w->segment_ptr;
+    w->cluster.pointer = ftell(w->fp) - w->segment_ptr;
 
     CHECK(mk_writeUInt(w->cluster.context, 0xe7, w->cluster.tc_scaled)); // Cluster Timecode
 
     delta = 0;
     w->cluster.block_count = 0;
 
-    if (w->cluster.count % 5 == 0) {
+    if ((w->cluster.count % 15) == 0) {
       for(i = 0; i < w->num_tracks; i++)
         w->tracks_arr[i]->cue_flag = 1;
     }
@@ -281,6 +283,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     CHECK(mk_writeUInt(c, 0xf1, w->cluster.pointer));  // CueClusterPosition
     CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
     CHECK(mk_closeContext(c, 0));
+    track->cue_flag = 0;
   }
 
   track->in_frame = 0;
@@ -427,8 +430,16 @@ int   mk_close(mk_Writer *w) {
 
   if (w->chapters != NULL)
   {
+    if (w->vlc_compat)
+      fseek(w->fp, w->segment_ptr + 0x103, SEEK_SET);
     w->seek_data.chapters = ftell(w->fp) - w->segment_ptr;
     mk_writeChapters(w);
+    if (w->vlc_compat) {
+      if (mk_flushContextData(w->root) < 0)
+        ret = -1;
+      if (mk_writeVoid(w->root, (0x800 - (ftell(w->fp) - w->segment_ptr))) < 0)
+        ret = -1;
+    }
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
   }
@@ -437,8 +448,16 @@ int   mk_close(mk_Writer *w) {
   if (w->cue_point.context != NULL)
     if (mk_closeContext(w->cue_point.context, 0) < 0)
       ret = -1;
+//   if (w->vlc_compat)
+//     fseek(w->fp, w->segment_ptr + 259 + 2051, SEEK_SET);
   if (mk_closeContext(w->cues, 0) < 0)
     ret = -1;
+  if (w->vlc_compat) {
+    if (mk_flushContextData(w->root) < 0)
+      ret = -1;
+    if (mk_writeVoid(w->root, (0x1000 - (ftell(w->fp) - w->segment_ptr))) < 0)
+      ret = -1;
+  }
   if (mk_flushContextData(w->root) < 0)
     ret = -1;
 

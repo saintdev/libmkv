@@ -117,7 +117,7 @@ struct mk_Track_s {
 
 /* EBML */
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
-int         mk_appendContextData(mk_Context *c, const void *data, unsigned size);
+int         mk_appendContextData(mk_Context *c, const void *data, uint64_t size);
 int         mk_writeID(mk_Context *c, unsigned id);
 int         mk_writeSize(mk_Context *c, uint64_t size);
 int         mk_writeSSize(mk_Context *c, int64_t size);
@@ -135,7 +135,7 @@ unsigned    mk_ebmlSizeSize(uint64_t s);
 unsigned    mk_ebmlSIntSize(int64_t si);
 /* EBML */
 
-int         mk_writeVoid(mk_Context *c, unsigned length);
+int         mk_writeVoid(mk_Context *c, uint64_t length);
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
 int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
 int         mk_writeFloat(mk_Context *c, unsigned id, float f);

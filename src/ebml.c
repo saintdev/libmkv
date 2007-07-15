@@ -51,12 +51,12 @@ mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id) {
   return c;
 }
 
-int    mk_appendContextData(mk_Context *c, const void *data, unsigned size) {
-  unsigned  ns = c->d_cur + size;
+int    mk_appendContextData(mk_Context *c, const void *data, uint64_t size) {
+  uint64_t  ns = c->d_cur + size;
 
   if (ns > c->d_max) {
     void      *dp;
-    unsigned  dn = c->d_max ? c->d_max << 1 : 16;
+    uint64_t  dn = c->d_max ? c->d_max << 1 : 16;
     while (ns > dn)
       dn <<= 1;
 
