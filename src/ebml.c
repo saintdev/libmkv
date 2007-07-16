@@ -175,9 +175,13 @@ int    mk_flushContextData(mk_Context *c) {
 
   if (c->parent)
     CHECK(mk_appendContextData(c->parent, c->data, c->d_cur));
-  else
+  else {
     if (fwrite(c->data, c->d_cur, 1, c->owner->fp) != 1)
       return -1;
+    w->f_pos += c->d_cur;
+    if (w->f_pos > w->f_eof)
+      w->f_eof = w->f_pos;
+  }
 
   c->d_cur = 0;
 
