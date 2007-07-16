@@ -192,11 +192,6 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
 
     delta = 0;
     w->cluster.block_count = 0;
-
-    if ((w->cluster.count % 15) == 0) {
-      for(i = 0; i < w->num_tracks; i++)
-        w->tracks_arr[i]->cue_flag = 1;
-    }
   }
 
   fsize = track->frame.data ? track->frame.data->d_cur : 0;
@@ -261,7 +256,9 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   if (!track->frame.keyframe)
     CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
 
-  if (track->cue_flag && track->frame.keyframe) {
+  if ((track->cue_flag || (track->track_type & MK_TRACK_VIDEO)) && track->frame.keyframe) {
+    for(i = 0; i < w->num_tracks; i++)
+      w->tracks_arr[i]->cue_flag = 1;
     if (w->cue_point.timecode != track->frame.timecode) {
       if (w->cue_point.context != NULL) {
         CHECK(mk_closeContext(w->cue_point.context, 0));
@@ -279,7 +276,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
       return -1;
     CHECK(mk_writeUInt(c, 0xf7, track->track_id)); // CueTrack
     CHECK(mk_writeUInt(c, 0xf1, w->cluster.pointer));  // CueClusterPosition
-    CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
+//     CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
     CHECK(mk_closeContext(c, 0));
     track->cue_flag = 0;
   }
