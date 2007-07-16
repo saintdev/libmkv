@@ -66,11 +66,9 @@ char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size) {
 }
 
 mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_compat) {
-  mk_Writer *w = malloc(sizeof(*w));
+  mk_Writer *w = calloc(1, sizeof(*w));
   if (w == NULL)
     return NULL;
-
-  memset(w, 0, sizeof(*w));
 
   w->root = mk_createContext(w, NULL, 0);
   if (w->root == NULL) {
