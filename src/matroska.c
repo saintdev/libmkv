@@ -200,7 +200,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     if (w->cluster.context == NULL)
       return -1;
 
-    w->cluster.pointer = ftell(w->fp) - w->segment_ptr;
+    w->cluster.pointer = w->f_pos - w->segment_ptr;
 
     CHECK(mk_writeUInt(w->cluster.context, 0xe7, w->cluster.tc_scaled)); // Cluster Timecode
 
@@ -364,7 +364,7 @@ int mk_writeSeek(mk_Writer *w, int64_t *pointer) {
   if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
     return -1;
   if (pointer != NULL)
-    seekhead_ptr = ftell(w->fp);
+    seekhead_ptr = w->f_pos;
   if (w->seek_data.seekhead) {
     if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
       return -1;
@@ -446,19 +446,19 @@ int   mk_close(mk_Writer *w) {
       if (mk_seekFile(w, w->segment_ptr + 0x103) < 0)
         ret = -1;
     }
-    w->seek_data.chapters = ftell(w->fp) - w->segment_ptr;
+    w->seek_data.chapters = w->f_pos - w->segment_ptr;
     mk_writeChapters(w);
     if (w->vlc_compat) {
       if (mk_flushContextData(w->root) < 0)
         ret = -1;
-      if (mk_writeVoid(w->root, (0x800 - (ftell(w->fp) - w->segment_ptr))) < 0)
+      if (mk_writeVoid(w->root, (0x800 - (w->f_pos - w->segment_ptr))) < 0)
         ret = -1;
     }
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
   }
 
-  w->seek_data.cues = ftell(w->fp) - w->segment_ptr;
+  w->seek_data.cues = w->f_pos - w->segment_ptr;
   if (w->cue_point.context != NULL)
     if (mk_closeContext(w->cue_point.context, 0) < 0)
       ret = -1;
@@ -471,7 +471,7 @@ int   mk_close(mk_Writer *w) {
   if (w->vlc_compat) {
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
-    if (mk_writeVoid(w->root, (0x1000 - (ftell(w->fp) - w->segment_ptr))) < 0)
+    if (mk_writeVoid(w->root, (0x1000 - (w->f_pos - w->segment_ptr))) < 0)
       ret = -1;
   }
   if (mk_flushContextData(w->root) < 0)
@@ -491,7 +491,7 @@ int   mk_close(mk_Writer *w) {
     {
       if (mk_flushContextData(w->root) < 0)
         ret = -1;
-      if (mk_writeVoid(w->root, (256 - (ftell(w->fp) - w->segment_ptr))) < 0)
+      if (mk_writeVoid(w->root, (256 - (w->f_pos - w->segment_ptr))) < 0)
         ret = -1;
     }
 
@@ -512,8 +512,8 @@ int   mk_close(mk_Writer *w) {
       if (mk_writeSeek(w, NULL) < 0 ||
           mk_flushContextData(w->root) < 0)
         ret = -1;
-      if (((i + w->segment_ptr) - ftell(w->fp) - 2) > 1)
-        if (mk_writeVoid(w->root, (i + w->segment_ptr) - ftell(w->fp) - 2) < 0 ||
+      if (((i + w->segment_ptr) - w->f_pos - 2) > 1)
+        if (mk_writeVoid(w->root, (i + w->segment_ptr) - w->f_pos - 2) < 0 ||
             mk_flushContextData(w->root) < 0)
           ret = -1;
     }
