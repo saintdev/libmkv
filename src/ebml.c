@@ -118,7 +118,7 @@ int    mk_writeSize(mk_Context *c, uint64_t size) {
     c_size[1] |= 0x02;
     return mk_appendContextData(c, c_size+1, 7);
   }
-  return mk_appendContextData(c, c_size, 9);
+  return mk_appendContextData(c, c_size, 8);
 }
 
 int    mk_writeSSize(mk_Context *c, int64_t size) {
