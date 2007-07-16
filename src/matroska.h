@@ -45,10 +45,12 @@ struct mk_Context_s {
 
 struct mk_Writer_s {
   FILE            *fp;
+  uint64_t        f_cur;
+  uint64_t        f_eof;
 
-  int64_t        duration_ptr;
-  int64_t        seekhead_ptr;
-  int64_t        segment_ptr;
+  int64_t         duration_ptr;
+  int64_t         seekhead_ptr;
+  int64_t         segment_ptr;
 
   mk_Context      *root;
   mk_Context      *freelist;
@@ -146,5 +148,6 @@ int         mk_closeContext(mk_Context *c, int64_t *off);
 int         mk_writeSeek(mk_Writer *w, int64_t *pointer);
 int         mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int         mk_writeChapters(mk_Writer *w);
+int         mk_seekFile(mk_Writer *w, uint64_t pos);
 
 #endif
