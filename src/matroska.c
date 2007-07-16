@@ -503,7 +503,7 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
   }
 
-  if (mk_closeContext(w->root, 0) < 1)
+  if (mk_closeContext(w->root, 0) < 0)
     ret = -1;
   mk_destroyContexts(w);
   fclose(w->fp);
