@@ -104,6 +104,7 @@ struct mk_Track_s {
 //  uint8_t         keyframe;
   uint64_t        default_duration;
   uint8_t         cue_flag;
+  uint8_t         track_type;
 
   struct {
     mk_Context    *data;

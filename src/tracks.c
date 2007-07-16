@@ -62,6 +62,7 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
   }
   if (mk_writeUInt(ti, 0x83, tc->trackType) < 0) // TrackType
     return NULL;
+  track->track_type = tc->trackType;
   if (mk_writeUInt(ti, 0x9c, tc->flagLacing) < 0) // FlagLacing
     return NULL;
   if (mk_writeStr(ti, 0x86, tc->codecID) < 0) // CodecID
