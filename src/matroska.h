@@ -45,7 +45,7 @@ struct mk_Context_s {
 
 struct mk_Writer_s {
   FILE            *fp;
-  uint64_t        f_cur;
+  uint64_t        f_pos;
   uint64_t        f_eof;
 
   int64_t         duration_ptr;
