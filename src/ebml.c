@@ -118,7 +118,7 @@ int    mk_writeSize(mk_Context *c, uint64_t size) {
     c_size[1] |= 0x02;
     return mk_appendContextData(c, c_size+1, 7);
   }
-  return mk_appendContextData(c, c_size, 9);
+  return mk_appendContextData(c, c_size, 8);
 }
 
 int    mk_writeSSize(mk_Context *c, int64_t size) {
@@ -170,14 +170,20 @@ int    mk_flushContextID(mk_Context *c) {
 }
 
 int    mk_flushContextData(mk_Context *c) {
+  mk_Writer *w = c->owner;
+
   if (c->d_cur == 0)
     return 0;
 
   if (c->parent)
     CHECK(mk_appendContextData(c->parent, c->data, c->d_cur));
-  else
-    if (fwrite(c->data, c->d_cur, 1, c->owner->fp) != 1)
+  else {
+    if (fwrite(c->data, c->d_cur, 1, w->fp) != 1)
       return -1;
+    w->f_pos += c->d_cur;
+    if (w->f_pos > w->f_eof)
+      w->f_eof = w->f_pos;
+  }
 
   c->d_cur = 0;
 

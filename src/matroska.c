@@ -25,6 +25,18 @@
 #include "matroska.h"
 #include "config.h"
 
+int mk_seekFile(mk_Writer *w, uint64_t pos) {
+  if (fseek(w->fp, pos, SEEK_SET))
+    return -1;
+
+  w->f_pos = pos;
+
+  if (pos > w->f_eof)
+    w->f_eof = pos;
+
+  return 0;
+}
+
 int    mk_writeVoid(mk_Context *c, uint64_t length) {
   char *c_void = calloc(length, sizeof(char));
 
@@ -186,7 +198,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     if (w->cluster.context == NULL)
       return -1;
 
-    w->cluster.pointer = ftell(w->fp) - w->segment_ptr;
+    w->cluster.pointer = w->f_pos - w->segment_ptr;
 
     CHECK(mk_writeUInt(w->cluster.context, 0xe7, w->cluster.tc_scaled)); // Cluster Timecode
 
@@ -347,7 +359,7 @@ int mk_writeSeek(mk_Writer *w, int64_t *pointer) {
   if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
     return -1;
   if (pointer != NULL)
-    seekhead_ptr = ftell(w->fp);
+    seekhead_ptr = w->f_pos;
   if (w->seek_data.seekhead) {
     if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
       return -1;
@@ -409,6 +421,8 @@ int   mk_close(mk_Writer *w) {
   int   i, ret = 0;
   mk_Track *tk;
   int64_t max_frame_tc = w->tracks_arr[0]->max_frame_tc;
+  uint64_t segment_size = 0;
+  unsigned char c_size[8];
 
   for (i = w->num_tracks - 1; i >= 0; i--)
   {
@@ -425,40 +439,46 @@ int   mk_close(mk_Writer *w) {
 
   if (w->chapters != NULL)
   {
-    if (w->vlc_compat)
-      fseek(w->fp, w->segment_ptr + 0x103, SEEK_SET);
-    w->seek_data.chapters = ftell(w->fp) - w->segment_ptr;
+    if (w->vlc_compat) {
+      if (mk_seekFile(w, w->segment_ptr + 0x103) < 0)
+        ret = -1;
+    }
+    w->seek_data.chapters = w->f_pos - w->segment_ptr;
     mk_writeChapters(w);
     if (w->vlc_compat) {
       if (mk_flushContextData(w->root) < 0)
         ret = -1;
-      if (mk_writeVoid(w->root, (0x800 - (ftell(w->fp) - w->segment_ptr))) < 0)
+      if (mk_writeVoid(w->root, (0x800 - (w->f_pos - w->segment_ptr))) < 0)
         ret = -1;
     }
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
   }
 
-  w->seek_data.cues = ftell(w->fp) - w->segment_ptr;
+  w->seek_data.cues = w->f_pos - w->segment_ptr;
   if (w->cue_point.context != NULL)
     if (mk_closeContext(w->cue_point.context, 0) < 0)
       ret = -1;
-//   if (w->vlc_compat)
-//     fseek(w->fp, w->segment_ptr + 259 + 2051, SEEK_SET);
+//   if (w->vlc_compat) {
+//     if (mk_seekFile(w, w->segment_ptr + 259 + 2051) < 0)
+//       ret = -1;
+//   }
   if (mk_closeContext(w->cues, 0) < 0)
     ret = -1;
   if (w->vlc_compat) {
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
-    if (mk_writeVoid(w->root, (0x1000 - (ftell(w->fp) - w->segment_ptr))) < 0)
+    if (mk_writeVoid(w->root, (0x1000 - (w->f_pos - w->segment_ptr))) < 0)
       ret = -1;
   }
   if (mk_flushContextData(w->root) < 0)
     ret = -1;
 
   if (w->wrote_header) {
-    if (w->vlc_compat)
-      fseek(w->fp, w->segment_ptr, SEEK_SET);
+    if (w->vlc_compat) {
+      if (mk_seekFile(w, w->segment_ptr) < 0)
+        ret = -1;
+    }
 
     if (mk_writeSeek(w, &w->seek_data.seekhead) < 0)
       ret = -1;
@@ -468,7 +488,7 @@ int   mk_close(mk_Writer *w) {
     {
       if (mk_flushContextData(w->root) < 0)
         ret = -1;
-      if (mk_writeVoid(w->root, (256 - (ftell(w->fp) - w->segment_ptr))) < 0)
+      if (mk_writeVoid(w->root, (256 - (w->f_pos - w->segment_ptr))) < 0)
         ret = -1;
     }
 
@@ -484,18 +504,29 @@ int   mk_close(mk_Writer *w) {
       w->seek_data.chapters = 0;
       w->seek_data.attachments = 0;
       w->seek_data.tags = 0;
-      fseek(w->fp, w->segment_ptr, SEEK_SET);
+      if (mk_seekFile(w, w->segment_ptr) < 0)
+        ret = -1;
       if (mk_writeSeek(w, NULL) < 0 ||
           mk_flushContextData(w->root) < 0)
         ret = -1;
-      if (((i + w->segment_ptr) - ftell(w->fp) - 2) > 1)
-        if (mk_writeVoid(w->root, (i + w->segment_ptr) - ftell(w->fp) - 2) < 0 ||
+      if (((i + w->segment_ptr) - w->f_pos - 2) > 1)
+        if (mk_writeVoid(w->root, (i + w->segment_ptr) - w->f_pos - 2) < 0 ||
             mk_flushContextData(w->root) < 0)
           ret = -1;
     }
 
-    fseek(w->fp, w->duration_ptr, SEEK_SET);
+    if (mk_seekFile(w, w->duration_ptr) < 0)
+      ret = -1;
     if (mk_writeFloatRaw(w->root, (float)((double)(max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
+        mk_flushContextData(w->root) < 0)
+      ret = -1;
+    if (mk_seekFile(w, w->segment_ptr - 8) < 0)
+      ret = -1;
+    segment_size = w->f_eof - w->segment_ptr;
+    for (i = 7; i > 0; --i)
+      c_size[i] = segment_size >> (8 * (7-i));
+    c_size[i] = 0x01;
+    if (mk_appendContextData(w->root, &c_size, 8) < 0 ||
         mk_flushContextData(w->root) < 0)
       ret = -1;
   }
