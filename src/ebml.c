@@ -170,13 +170,15 @@ int    mk_flushContextID(mk_Context *c) {
 }
 
 int    mk_flushContextData(mk_Context *c) {
+  mk_Writer *w = c->owner;
+
   if (c->d_cur == 0)
     return 0;
 
   if (c->parent)
     CHECK(mk_appendContextData(c->parent, c->data, c->d_cur));
   else {
-    if (fwrite(c->data, c->d_cur, 1, c->owner->fp) != 1)
+    if (fwrite(c->data, c->d_cur, 1, w->fp) != 1)
       return -1;
     w->f_pos += c->d_cur;
     if (w->f_pos > w->f_eof)
