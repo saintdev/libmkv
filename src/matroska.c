@@ -526,9 +526,9 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
     if (mk_seekFile(w, w->segment_ptr + 4) < 0)
       ret = -1;
-    segment_size = (w->f_eof - w->segment_ptr) | (1 << 57);
+    segment_size = (w->f_eof - w->segment_ptr) | 0x0100000000000000;
     if (mk_appendContextData(w->root, &segment_size, 8) < 0 ||
-        mk_flushContextdata(w->root) < 0)
+        mk_flushContextData(w->root) < 0)
       ret = -1;
   }
 
