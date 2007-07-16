@@ -48,9 +48,10 @@ struct mk_Writer_s {
   uint64_t        f_pos;
   uint64_t        f_eof;
 
-  int64_t         duration_ptr;
-  int64_t         seekhead_ptr;
-  int64_t         segment_ptr;
+
+  uint64_t        duration_ptr;
+  uint64_t        seekhead_ptr;
+  uint64_t        segment_ptr;
 
   mk_Context      *root;
   mk_Context      *freelist;
