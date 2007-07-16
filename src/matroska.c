@@ -426,6 +426,7 @@ int   mk_close(mk_Writer *w) {
   int   i, ret = 0;
   mk_Track *tk;
   int64_t max_frame_tc = w->tracks_arr[0]->max_frame_tc;
+  uint64_t segment_size = 0;
 
   for (i = w->num_tracks - 1; i >= 0; i--)
   {
@@ -522,6 +523,12 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
     if (mk_writeFloatRaw(w->root, (float)((double)(max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
         mk_flushContextData(w->root) < 0)
+      ret = -1;
+    if (mk_seekFile(w, w->segment_ptr + 4) < 0)
+      ret = -1;
+    segment_size = (w->f_eof - w->segment_ptr) | (1 << 57);
+    if (mk_appendContextData(w->root, &segment_size, 8) < 0 ||
+        mk_flushContextdata(w->root) < 0)
       ret = -1;
   }
 
