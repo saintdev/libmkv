@@ -29,7 +29,7 @@ int mk_seekFile(mk_Writer *w, uint64_t pos) {
   if (fseek(w->fp, pos, SEEK_SET))
     return -1;
 
-  w->f_cur = pos;
+  w->f_pos = pos;
 
   if (pos > w->f_eof)
     w->f_eof = pos;
