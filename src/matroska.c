@@ -427,6 +427,7 @@ int   mk_close(mk_Writer *w) {
   mk_Track *tk;
   int64_t max_frame_tc = w->tracks_arr[0]->max_frame_tc;
   uint64_t segment_size = 0;
+  unsigned char c_size[8];
 
   for (i = w->num_tracks - 1; i >= 0; i--)
   {
@@ -524,10 +525,13 @@ int   mk_close(mk_Writer *w) {
     if (mk_writeFloatRaw(w->root, (float)((double)(max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
         mk_flushContextData(w->root) < 0)
       ret = -1;
-    if (mk_seekFile(w, w->segment_ptr + 4) < 0)
+    if (mk_seekFile(w, w->segment_ptr - 8) < 0)
       ret = -1;
-    segment_size = (w->f_eof - w->segment_ptr) | 0x0100000000000000;
-    if (mk_appendContextData(w->root, &segment_size, 8) < 0 ||
+    segment_size = w->f_eof - w->segment_ptr;
+    for (i = 7; i > 0; --i)
+      c_size[i] = segment_size >> (8 * (7-i));
+    c_size[i] = 0x01;
+    if (mk_appendContextData(w->root, &c_size, 8) < 0 ||
         mk_flushContextData(w->root) < 0)
       ret = -1;
   }
