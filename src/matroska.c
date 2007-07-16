@@ -442,8 +442,10 @@ int   mk_close(mk_Writer *w) {
 
   if (w->chapters != NULL)
   {
-    if (w->vlc_compat)
-      fseek(w->fp, w->segment_ptr + 0x103, SEEK_SET);
+    if (w->vlc_compat) {
+      if (mk_seekFile(w, w->segment_ptr + 0x103) < 0)
+        ret = -1;
+    }
     w->seek_data.chapters = ftell(w->fp) - w->segment_ptr;
     mk_writeChapters(w);
     if (w->vlc_compat) {
@@ -460,8 +462,10 @@ int   mk_close(mk_Writer *w) {
   if (w->cue_point.context != NULL)
     if (mk_closeContext(w->cue_point.context, 0) < 0)
       ret = -1;
-//   if (w->vlc_compat)
-//     fseek(w->fp, w->segment_ptr + 259 + 2051, SEEK_SET);
+//   if (w->vlc_compat) {
+//     if (mk_seekFile(w, w->segment_ptr + 259 + 2051) < 0)
+//       ret = -1;
+//   }
   if (mk_closeContext(w->cues, 0) < 0)
     ret = -1;
   if (w->vlc_compat) {
@@ -474,8 +478,10 @@ int   mk_close(mk_Writer *w) {
     ret = -1;
 
   if (w->wrote_header) {
-    if (w->vlc_compat)
-      fseek(w->fp, w->segment_ptr, SEEK_SET);
+    if (w->vlc_compat) {
+      if (mk_seekFile(w, w->segment_ptr) < 0)
+        ret = -1;
+    }
 
     if (mk_writeSeek(w, &w->seek_data.seekhead) < 0)
       ret = -1;
@@ -501,7 +507,8 @@ int   mk_close(mk_Writer *w) {
       w->seek_data.chapters = 0;
       w->seek_data.attachments = 0;
       w->seek_data.tags = 0;
-      fseek(w->fp, w->segment_ptr, SEEK_SET);
+      if (mk_seekFile(w, w->segment_ptr) < 0)
+        ret = -1;
       if (mk_writeSeek(w, NULL) < 0 ||
           mk_flushContextData(w->root) < 0)
         ret = -1;
@@ -511,7 +518,8 @@ int   mk_close(mk_Writer *w) {
           ret = -1;
     }
 
-    fseek(w->fp, w->duration_ptr, SEEK_SET);
+    if (mk_seekFile(w, w->duration_ptr) < 0)
+      ret = -1;
     if (mk_writeFloatRaw(w->root, (float)((double)(max_frame_tc+w->def_duration) / w->timescale)) < 0 ||
         mk_flushContextData(w->root) < 0)
       ret = -1;
