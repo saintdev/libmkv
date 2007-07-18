@@ -428,6 +428,7 @@ int   mk_close(mk_Writer *w) {
   {
     tk = w->tracks_arr[i];
     w->tracks_arr[i] = NULL;
+    --w->num_tracks;
     if (mk_flushFrame(w, tk) < 0)
       ret = -1;
     free(tk);
