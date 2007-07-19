@@ -190,7 +190,7 @@ int    mk_flushContextData(mk_Context *c) {
   return 0;
 }
 
-int    mk_closeContext(mk_Context *c, off_t *off) {
+int    mk_closeContext(mk_Context *c, int64_t *off) {
   if (c->id) {
     CHECK(mk_writeID(c->parent, c->id));
     CHECK(mk_writeSize(c->parent, c->d_cur));
