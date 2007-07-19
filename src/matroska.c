@@ -177,7 +177,7 @@ static int mk_closeCluster(mk_Writer *w) {
 }
 
 int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
-  mk_Context *c;
+  mk_Context *c, *tp;
   int64_t   delta, ref = 0;
   unsigned  fsize, bgsize;
   uint8_t   flags, c_delta_flags[2];
@@ -268,29 +268,18 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   if (!track->frame.keyframe)
     CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
 
-  if ((track->cue_flag || (track->track_type & MK_TRACK_VIDEO)) && track->frame.keyframe) {
-    for(i = 0; i < w->num_tracks; i++)
-      w->tracks_arr[i]->cue_flag = 1;
-    if (w->cue_point.timecode != track->frame.timecode) {
-      if (w->cue_point.context != NULL) {
-        CHECK(mk_closeContext(w->cue_point.context, 0));
-        w->cue_point.context = NULL;
-      }
-    }
-    if (w->cue_point.context == NULL) {
-      if ((w->cue_point.context = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
-        return -1;
-      CHECK(mk_writeUInt(w->cue_point.context, 0xb3, track->frame.timecode)); // CueTime
-      w->cue_point.timecode = track->frame.timecode;
-    }
-
-    if ((c = mk_createContext(w, w->cue_point.context, 0xb7)) == NULL)  // CueTrackPositions
+  if (track->frame.keyframe && (track->track_type & MK_TRACK_VIDEO) && (w->prev_cue_pos + 3*CLSIZE) >= w->f_pos) {
+    if ((c = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
       return -1;
-    CHECK(mk_writeUInt(c, 0xf7, track->track_id)); // CueTrack
-    CHECK(mk_writeUInt(c, 0xf1, w->cluster.pointer));  // CueClusterPosition
+    CHECK(mk_writeUInt(c, 0xb3, track->frame.timecode)); // CueTime
+
+    if ((tp = mk_createContext(w, c, 0xb7)) == NULL)  // CueTrackPositions
+      return -1;
+    CHECK(mk_writeUInt(tp, 0xf7, track->track_id)); // CueTrack
+    CHECK(mk_writeUInt(tp, 0xf1, w->cluster.pointer));  // CueClusterPosition
 //     CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
+    CHECK(mk_closeContext(tp, 0));
     CHECK(mk_closeContext(c, 0));
-    track->cue_flag = 0;
   }
 
   track->in_frame = 0;
@@ -457,9 +446,6 @@ int   mk_close(mk_Writer *w) {
   }
 
   w->seek_data.cues = w->f_pos - w->segment_ptr;
-  if (w->cue_point.context != NULL)
-    if (mk_closeContext(w->cue_point.context, 0) < 0)
-      ret = -1;
 //   if (w->vlc_compat) {
 //     if (mk_seekFile(w, w->segment_ptr + 259 + 2051) < 0)
 //       ret = -1;
