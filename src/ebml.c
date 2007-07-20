@@ -90,31 +90,31 @@ int    mk_writeID(mk_Context *c, unsigned id) {
 int    mk_writeSize(mk_Context *c, uint64_t size) {
   unsigned char   c_size[8] = { 0x01, size >> 48, size >> 40, size >> 32, size >> 24, size >> 16, size >> 8, size };
 
-  if (size < 0x7f) {
+  if (size < 0x7fll) {
     c_size[7] |= 0x80;
     return mk_appendContextData(c, c_size+7, 1);
   }
-  if (size < 0x3fff) {
+  if (size < 0x3fffll) {
     c_size[6] |= 0x40;
     return mk_appendContextData(c, c_size+6, 2);
   }
-  if (size < 0x1fffff) {
+  if (size < 0x1fffffll) {
     c_size[5] |= 0x20;
     return mk_appendContextData(c, c_size+5, 3);
   }
-  if (size < 0x0fffffff) {
+  if (size < 0x0fffffffll) {
     c_size[4] |= 0x10;
     return mk_appendContextData(c, c_size+4, 4);
   }
-  if (size < 0x07ffffffff) {
+  if (size < 0x07ffffffffll) {
     c_size[3] |= 0x08;
     return mk_appendContextData(c, c_size+3, 5);
   }
-  if (size < 0x03ffffffffff) {
+  if (size < 0x03ffffffffffll) {
     c_size[2] |= 0x04;
     return mk_appendContextData(c, c_size+2, 6);
   }
-  if (size < 0x01ffffffffffff) {
+  if (size < 0x01ffffffffffffll) {
     c_size[1] |= 0x02;
     return mk_appendContextData(c, c_size+1, 7);
   }
@@ -128,25 +128,25 @@ int    mk_writeSSize(mk_Context *c, int64_t size) {
   switch (size_size)
   {
     case 1:
-      size += 0x3f;
+      size += 0x3fll;
       break;
     case 2:
-      size += 0x1fff;
+      size += 0x1fffll;
       break;
     case 3:
-      size += 0x0fffff;
+      size += 0x0fffffll;
       break;
     case 4:
-      size += 0x07ffffff;
+      size += 0x07ffffffll;
       break;
     case 5:
-      size += 0x03ffffffff;
+      size += 0x03ffffffffll;
       break;
     case 6:
-      size += 0x01ffffffffff;
+      size += 0x01ffffffffffll;
       break;
     case 7:
-      size += 0x00ffffffffffff;
+      size += 0x00ffffffffffffll;
       break;
       default:    // Matroska currently doesn't support any int > 56-bit.
         return -1;
@@ -296,19 +296,19 @@ int    mk_writeFloat(mk_Context *c, unsigned id, float f) {
 }
 
 unsigned   mk_ebmlSizeSize(uint64_t s) {
-  if (s < 0x7f)
+  if (s < 0x7fll)
     return 1;
-  if (s < 0x3fff)
+  if (s < 0x3fffll)
     return 2;
-  if (s < 0x1fffff)
+  if (s < 0x1fffffll)
     return 3;
-  if (s < 0x0fffffff)
+  if (s < 0x0fffffffll)
     return 4;
-  if (s < 0x07ffffffff)
+  if (s < 0x07ffffffffll)
     return 5;
-  if (s < 0x03ffffffffff)
+  if (s < 0x03ffffffffffll)
     return 6;
-  if (s < 0x01ffffffffffff)
+  if (s < 0x01ffffffffffffll)
     return 7;
   return 8;
 }
