@@ -268,7 +268,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   if (!track->frame.keyframe)
     CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
 
-  if (track->frame.keyframe && (track->track_type & MK_TRACK_VIDEO) && (w->prev_cue_pos + 3*CLSIZE) >= w->f_pos) {
+  if (track->frame.keyframe && (track->track_type & MK_TRACK_VIDEO) && (track->prev_cue_pos + 3*CLSIZE) >= w->f_pos) {
     if ((c = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
       return -1;
     CHECK(mk_writeUInt(c, 0xb3, track->frame.timecode)); // CueTime

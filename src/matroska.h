@@ -78,8 +78,6 @@ struct mk_Writer_s {
     int64_t       attachments;
     int64_t       tags;
   } seek_data;
-  
-  int64_t         prev_cue_pos;
 
   struct {
     mk_Context    *context;
@@ -101,6 +99,7 @@ struct mk_Track_s {
   uint8_t         in_frame;
   uint64_t        default_duration;
   uint8_t         track_type;
+  int64_t        prev_cue_pos;
 
   struct {
     mk_Context    *data;
