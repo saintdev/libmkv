@@ -131,13 +131,11 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   w->segment_ptr = c->d_cur;
   CHECK(mk_closeContext(c, &w->segment_ptr));
 
-  if (w->vlc_compat)
-  {
+  if (w->vlc_compat) {
     CHECK(mk_writeVoid(w->root, 0x100));  // 256 bytes should be enough room for our Seek entries.
     CHECK(mk_writeVoid(w->root, 0x800)); // 2048 bytes for Chapters.
-    CHECK(mk_writeVoid(w->root, 0x1000)); // 4096 bytes for Cues.
-  } else
-  {
+  }
+  else {
     w->seek_data.seekhead = 0x80000000;
     CHECK(mk_writeSeek(w, &w->seekhead_ptr));
     w->seek_data.seekhead = 0;
@@ -427,6 +425,13 @@ int   mk_close(mk_Writer *w) {
   if (mk_closeCluster(w) < 0)
     ret = -1;
 
+
+  w->seek_data.cues = w->f_pos - w->segment_ptr;
+  if (mk_closeContext(w->cues, 0) < 0)
+    ret = -1;
+  if (mk_flushContextData(w->root) < 0)
+    ret = -1;
+  
   if (w->chapters != NULL)
   {
     if (w->vlc_compat) {
@@ -444,22 +449,6 @@ int   mk_close(mk_Writer *w) {
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
   }
-
-  w->seek_data.cues = w->f_pos - w->segment_ptr;
-//   if (w->vlc_compat) {
-//     if (mk_seekFile(w, w->segment_ptr + 259 + 2051) < 0)
-//       ret = -1;
-//   }
-  if (mk_closeContext(w->cues, 0) < 0)
-    ret = -1;
-  if (w->vlc_compat) {
-    if (mk_flushContextData(w->root) < 0)
-      ret = -1;
-    if (mk_writeVoid(w->root, (0x1000 - (w->f_pos - w->segment_ptr))) < 0)
-      ret = -1;
-  }
-  if (mk_flushContextData(w->root) < 0)
-    ret = -1;
 
   if (w->wrote_header) {
     if (w->vlc_compat) {
