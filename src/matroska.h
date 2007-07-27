@@ -81,6 +81,7 @@ struct mk_Writer_s {
 
   struct {
     mk_Context    *context;
+    mk_Context    *seekhead;
     uint64_t      block_count;
     uint64_t      count;
     uint64_t      pointer;
@@ -127,11 +128,11 @@ int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
 int         mk_writeSInt(mk_Context *c, unsigned id, int64_t si);
 int         mk_writeFloatRaw(mk_Context *c, float f);
 int         mk_writeFloat(mk_Context *c, unsigned id, float f);
+int         mk_writeVoid(mk_Context *c, uint64_t length);
 unsigned    mk_ebmlSizeSize(uint64_t s);
 unsigned    mk_ebmlSIntSize(int64_t si);
 /* EBML */
 
-int         mk_writeVoid(mk_Context *c, uint64_t length);
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
 int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
 int         mk_writeFloat(mk_Context *c, unsigned id, float f);
@@ -139,7 +140,8 @@ int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
 int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
 int         mk_flushContextData(mk_Context *c);
 int         mk_closeContext(mk_Context *c, int64_t *off);
-int         mk_writeSeek(mk_Writer *w, int64_t *pointer);
+int         mk_writeSeek(mk_Writer *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos);
+int         mk_writeSeekHead(mk_Writer *w, int64_t *pointer);
 int         mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int         mk_writeChapters(mk_Writer *w);
 int         mk_seekFile(mk_Writer *w, uint64_t pos);

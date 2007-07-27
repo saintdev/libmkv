@@ -37,16 +37,6 @@ int mk_seekFile(mk_Writer *w, uint64_t pos) {
   return 0;
 }
 
-int    mk_writeVoid(mk_Context *c, uint64_t length) {
-  char *c_void = calloc(length, sizeof(char));
-
-  CHECK(mk_writeID(c, 0xec));
-  CHECK(mk_writeSize(c, length));
-  CHECK(mk_appendContextData(c, c_void, length));
-  free(c_void);
-  return 0;
-}
-
 char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size) {
   unsigned i, j;
   uint64_t offset = 0;
@@ -93,6 +83,15 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_
     mk_destroyContexts(w);
     free(w);
     return NULL;
+  }
+
+  if (vlc_compat) {
+    if ((w->cluster.seekhead = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
+    {
+      mk_destroyContexts(w);
+      free(w);
+      return NULL;
+    }
   }
 
   w->fp = fopen(filename, "wb");
@@ -153,9 +152,8 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
 
   w->seek_data.tracks = w->root->d_cur - w->segment_ptr;
   
-  if (w->tracks) {
+  if (w->tracks)
     CHECK(mk_closeContext(w->tracks, 0));
-  }
 
   CHECK(mk_flushContextData(w->root));
 
@@ -197,6 +195,9 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
       return -1;
 
     w->cluster.pointer = w->f_pos - w->segment_ptr;
+
+    if (w->vlc_compat)
+      CHECK(mk_writeSeek(w, w->cluster.seekhead, 0x1f43b675, w->cluster.pointer));
 
     CHECK(mk_writeUInt(w->cluster.context, 0xe7, w->cluster.tc_scaled)); // Cluster Timecode
 
@@ -338,8 +339,9 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
   return mk_appendContextData(track->frame.data, data, size);
 }
 
-int mk_writeSeek(mk_Write *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos) {
+int   mk_writeSeek(mk_Writer *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos) {
   mk_Context  *s;
+
   if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
     return -1;
   CHECK(mk_writeUInt(s, 0x53ab, seek_id));  // SeekID
@@ -351,7 +353,7 @@ int mk_writeSeek(mk_Write *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos
 
 /* The offset of the SeekHead is returned in *pointer. */
 int mk_writeSeekHead(mk_Writer *w, int64_t *pointer) {
-  mk_Context  *c, *s;
+  mk_Context  *c;
   int64_t   seekhead_ptr;
 
   if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
@@ -401,12 +403,19 @@ int   mk_close(mk_Writer *w) {
   if (mk_closeCluster(w) < 0)
     ret = -1;
 
-
   w->seek_data.cues = w->f_pos - w->segment_ptr;
   if (mk_closeContext(w->cues, 0) < 0)
     ret = -1;
   if (mk_flushContextData(w->root) < 0)
     ret = -1;
+
+  if (w->vlc_compat && w->cluster.seekhead) {
+    w->seek_data.seekhead = w->f_pos - w->segment_ptr;
+    if (mk_closeContext(w->cluster.seekhead, 0) < 0)
+      ret = -1;
+    if (mk_flushContextData(w->root) < 0)
+      ret = -1;
+  }
   
   if (w->chapters != NULL)
   {
