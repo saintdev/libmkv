@@ -81,11 +81,6 @@ struct mk_Writer_s {
 
   struct {
     mk_Context    *context;
-    uint64_t      timecode;
-  } cue_point;
-
-  struct {
-    mk_Context    *context;
     uint64_t      block_count;
     uint64_t      count;
     uint64_t      pointer;
@@ -103,8 +98,8 @@ struct mk_Track_s {
   int64_t         max_frame_tc;
   uint8_t         in_frame;
   uint64_t        default_duration;
-  uint8_t         cue_flag;
   uint8_t         track_type;
+  int64_t        prev_cue_pos;
 
   struct {
     mk_Context    *data;
