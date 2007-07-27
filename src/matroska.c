@@ -137,7 +137,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   }
   else {
     w->seek_data.seekhead = 0x80000000;
-    CHECK(mk_writeSeek(w, &w->seekhead_ptr));
+    CHECK(mk_writeSeekHead(w, &w->seekhead_ptr));
     w->seek_data.seekhead = 0;
   }
 
@@ -339,7 +339,7 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
 }
 
 /* The offset of the SeekHead is returned in *pointer. */
-int mk_writeSeek(mk_Writer *w, int64_t *pointer) {
+int mk_writeSeekHead(mk_Writer *w, int64_t *pointer) {
   mk_Context  *c, *s;
   int64_t   seekhead_ptr;
 
@@ -456,7 +456,7 @@ int   mk_close(mk_Writer *w) {
         ret = -1;
     }
 
-    if (mk_writeSeek(w, &w->seek_data.seekhead) < 0)
+    if (mk_writeSeekHead(w, &w->seek_data.seekhead) < 0)
       ret = -1;
     w->seek_data.seekhead -= w->segment_ptr;
 
@@ -482,7 +482,7 @@ int   mk_close(mk_Writer *w) {
       w->seek_data.tags = 0;
       if (mk_seekFile(w, w->segment_ptr) < 0)
         ret = -1;
-      if (mk_writeSeek(w, NULL) < 0 ||
+      if (mk_writeSeekHead(w, NULL) < 0 ||
           mk_flushContextData(w->root) < 0)
         ret = -1;
       if (((i + w->segment_ptr) - w->f_pos - 2) > 1)
