@@ -338,6 +338,17 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
   return mk_appendContextData(track->frame.data, data, size);
 }
 
+int mk_writeSeek(mk_Write *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos) {
+  mk_Context  *s;
+  if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+    return -1;
+  CHECK(mk_writeUInt(s, 0x53ab, seek_id));  // SeekID
+  CHECK(mk_writeUInt(s, 0x53ac, seek_pos)); // SeekPosition
+  CHECK(mk_closeContext(s, 0));
+
+  return 0;
+}
+
 /* The offset of the SeekHead is returned in *pointer. */
 int mk_writeSeekHead(mk_Writer *w, int64_t *pointer) {
   mk_Context  *c, *s;
@@ -347,55 +358,20 @@ int mk_writeSeekHead(mk_Writer *w, int64_t *pointer) {
     return -1;
   if (pointer != NULL)
     seekhead_ptr = w->f_pos;
-  if (w->seek_data.seekhead) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x114d9b74)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.seekhead)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
-  if (w->seek_data.segmentinfo) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x1549a966)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.segmentinfo)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
-  if (w->seek_data.tracks) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x1654ae6b)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.tracks)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
-  if (w->seek_data.cues) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x1c53bb6b)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.cues)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
-  if (w->seek_data.attachments) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x1941a469)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.attachments)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
-  if (w->seek_data.chapters) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x1043a770)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.chapters)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
-  if (w->seek_data.tags) {
-    if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
-      return -1;
-    CHECK(mk_writeUInt(s, 0x53ab, 0x1254c367)); // SeekID
-    CHECK(mk_writeUInt(s, 0x53ac, w->seek_data.tags)); // SeekPosition
-    CHECK(mk_closeContext(s, 0));
-  }
+  if (w->seek_data.seekhead)
+    CHECK(mk_writeSeek(w, c, 0x114d9b74, w->seek_data.seekhead));
+  if (w->seek_data.segmentinfo)
+    CHECK(mk_writeSeek(w, c, 0x1549a966, w->seek_data.segmentinfo));
+  if (w->seek_data.tracks)
+    CHECK(mk_writeSeek(w, c, 0x1654ae6b, w->seek_data.tracks));
+  if (w->seek_data.cues)
+    CHECK(mk_writeSeek(w, c, 0x1c53bb6b, w->seek_data.cues));
+  if (w->seek_data.attachments)
+    CHECK(mk_writeSeek(w, c, 0x1941a469, w->seek_data.attachments));
+  if (w->seek_data.chapters)
+    CHECK(mk_writeSeek(w, c, 0x1043a770, w->seek_data.chapters));
+  if (w->seek_data.tags)
+    CHECK(mk_writeSeek(w, c, 0x1254c367, w->seek_data.tags));
   CHECK(mk_closeContext(c, 0));
 
   if (pointer != NULL)
