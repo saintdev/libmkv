@@ -78,8 +78,9 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
   if (tc->language)
     if (mk_writeStr(ti, 0x22b59c, tc->language) < 0)  // Language
       return NULL;
-  if (mk_writeUInt(ti, 0xb9, tc->flagEnabled) < 0) // FlagEnabled
-    return NULL;
+  if (tc->flagEnabled != 1)
+    if (mk_writeUInt(ti, 0xb9, tc->flagEnabled) < 0) // FlagEnabled
+      return NULL;
   if (mk_writeUInt(ti, 0x88, tc->flagDefault) < 0) // FlagDefault
     return NULL;
   if (tc->flagForced)
