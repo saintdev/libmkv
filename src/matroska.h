@@ -108,6 +108,7 @@ struct mk_Track_s {
     uint8_t       lacing;
     uint8_t       lacing_num_frames;
     uint64_t      *lacing_sizes;
+    uint64_t      duration;
   } frame;
 };
 

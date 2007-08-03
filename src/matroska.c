@@ -290,6 +290,8 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
   }
   if (!track->frame.keyframe)
     CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
+  if (track->frame.duration > 0)
+    CHECK(mk_writeUInt(w->cluster.context, 0x9b, track->frame.duration)); // BlockDuration
 
   if (track->frame.keyframe && (track->track_type & MK_TRACK_VIDEO) && ((track->prev_cue_pos + 3*CLSIZE) <= w->f_pos || track->frame.timecode == 0)) {
     if ((c = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
@@ -328,7 +330,7 @@ int   mk_startFrame(mk_Writer *w, mk_Track *track) {
   return 0;
 }
 
-int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe) {
+int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe, uint64_t duration) {
   if (!track->in_frame)
     return -1;
 
@@ -337,6 +339,9 @@ int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigne
 
   if (track->max_frame_tc < timestamp)
     track->max_frame_tc = timestamp;
+
+  if (duration > 0)
+    track->frame.duration = duration;
 
   return 0;
 }
