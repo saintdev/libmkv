@@ -121,6 +121,8 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
       if (tc->extra.video.displayUnit)
         if (mk_writeUInt(v, 0x54b2, tc->extra.video.displayUnit) < 0) // DisplayUnit
           return NULL;
+      if (mk_closeContext(v, 0) < 0)
+        return NULL;
       break;
     case MK_TRACK_AUDIO:    // Audio
       if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
@@ -132,13 +134,15 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
       if (tc->extra.audio.bitDepth)
         if (mk_writeUInt(v, 0x6264, tc->extra.audio.bitDepth) < 0) // BitDepth
           return NULL;
+      if (mk_closeContext(v, 0) < 0)
+        return NULL;
       break;
-    default:                // Other TODO: Implement other track types.
+    case MK_TRACK_SUBTITLE: // Subtitles
+      break;
+    default:                // Other   TODO: Implement other track types.
       return NULL;
   }
 
-  if (mk_closeContext(v, 0) < 0)
-    return NULL;
   if (mk_closeContext(ti, 0) < 0)
     return NULL;
 
