@@ -126,7 +126,7 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc);
 int  mk_writeHeader(mk_Writer *w, const char *writingApp);
 int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned size);
-int  mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe);
+int  mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe, uint64_t duration);
 int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, uint8_t lacing, uint8_t num_frames, uint64_t sizes[]);
 int  mk_createChapterSimple(mk_Writer *w, uint64_t start, uint64_t end, char *name);
 int  mk_close( mk_Writer *w );
