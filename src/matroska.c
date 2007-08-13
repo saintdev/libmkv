@@ -185,7 +185,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     return 0;
 
   delta = track->frame.timecode/w->timescale - w->cluster.tc_scaled;
-  if (delta > 32767ll || delta < -32768ll)
+  if (delta > 2000ll || delta < -2000ll)
     CHECK(mk_closeCluster(w));
 
   if (w->cluster.context == NULL) {
