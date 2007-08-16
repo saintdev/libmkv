@@ -295,6 +295,16 @@ int    mk_writeFloat(mk_Context *c, unsigned id, float f) {
   return 0;
 }
 
+int    mk_writeVoid(mk_Context *c, uint64_t length) {
+  char *c_void = calloc(length, sizeof(char));
+
+  CHECK(mk_writeID(c, 0xec));
+  CHECK(mk_writeSize(c, length));
+  CHECK(mk_appendContextData(c, c_void, length));
+  free(c_void);
+  return 0;
+}
+
 unsigned   mk_ebmlSizeSize(uint64_t s) {
   if (s < 0x7fll)
     return 1;
