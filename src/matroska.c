@@ -431,12 +431,6 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
   }
 
-  w->seek_data.cues = w->f_pos - w->segment_ptr;
-  if (mk_closeContext(w->cues, 0) < 0)
-    ret = -1;
-  if (mk_flushContextData(w->root) < 0)
-    ret = -1;
-
   if (w->wrote_header) {
     if (w->vlc_compat) {
       if (mk_seekFile(w, w->segment_ptr) < 0)
