@@ -419,13 +419,15 @@ int   mk_close(mk_Writer *w) {
   
   if (w->chapters != NULL)
   {
-    w->seek_data.chapters = w->f_pos - w->segment_ptr;
-    mk_writeChapters(w);
     if (w->vlc_compat) {
       if (mk_flushContextData(w->root) < 0)
         ret = -1;
       if (mk_seekFile(w, w->segment_ptr + 0x100 + 3) < 0)
         ret = -1;
+    }
+    w->seek_data.chapters = w->f_pos - w->segment_ptr;
+    mk_writeChapters(w);
+    if (w->vlc_compat) {
       if (mk_writeVoid(w->root, (0x800 - (w->f_pos - w->segment_ptr - 0x100 - 3))) < 0)
         ret = -1;
     }
