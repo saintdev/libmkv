@@ -8,7 +8,7 @@ AC_CONFIG_AUX_DIR([config])
 
 AC_CONFIG_SRCDIR([include/libmkv.h])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(libmkv, 0.6.1)
+AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC
