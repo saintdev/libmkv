@@ -279,6 +279,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
 //     CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
     CHECK(mk_closeContext(tp, 0));
     CHECK(mk_closeContext(c, 0));
+    track->prev_cue_pos = w->f_pos;
   }
 
   track->in_frame = 0;
