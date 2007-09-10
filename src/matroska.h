@@ -24,9 +24,6 @@
 #ifndef _MATROSKA_H
 #define _MATROSKA_H 1
 
-#define _LARGEFILE_SOURCE
-#define _FILE_OFFSET_BITS 64
-
 #define CLSIZE    1048576
 #define CHECK(x)  do { if ((x) < 0) return -1; } while (0)
 
