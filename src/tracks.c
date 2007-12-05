@@ -99,33 +99,33 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
     case MK_TRACK_VIDEO:    // Video
       if ((v = mk_createContext(w, ti, 0xe0)) == NULL)
         return NULL;
-      if (tc->video.pixelCrop[0] != 0 || tc->video.pixelCrop[1] != 0 || tc->video.pixelCrop[2] != 0 || tc->video.pixelCrop[3] != 0) {
+      if (tc->extra.video.pixelCrop[0] != 0 || tc->extra.video.pixelCrop[1] != 0 || tc->extra.video.pixelCrop[2] != 0 || tc->extra.video.pixelCrop[3] != 0) {
         for (i = 0; i < 4; i++) {
-          if (mk_writeUInt(v, 0x54aa + (i * 0x11), tc->video.pixelCrop[i]) < 0) // PixelCrop
+          if (mk_writeUInt(v, 0x54aa + (i * 0x11), tc->extra.video.pixelCrop[i]) < 0) // PixelCrop
             return NULL;
         }
       }
-      if (mk_writeUInt(v, 0xb0, tc->video.pixelWidth) < 0) // PixelWidth
+      if (mk_writeUInt(v, 0xb0, tc->extra.video.pixelWidth) < 0) // PixelWidth
         return NULL;
-      if (mk_writeUInt(v, 0xba, tc->video.pixelHeight) < 0 ) // PixelHeight
+      if (mk_writeUInt(v, 0xba, tc->extra.video.pixelHeight) < 0 ) // PixelHeight
         return NULL;
-      if (mk_writeUInt(v, 0x54b0, tc->video.displayWidth) < 0) // DisplayWidth
+      if (mk_writeUInt(v, 0x54b0, tc->extra.video.displayWidth) < 0) // DisplayWidth
         return NULL;
-      if (mk_writeUInt(v, 0x54ba, tc->video.displayHeight) < 0) // DisplayHeight
+      if (mk_writeUInt(v, 0x54ba, tc->extra.video.displayHeight) < 0) // DisplayHeight
         return NULL;
-      if (tc->video.displayUnit)
-        if (mk_writeUInt(v, 0x54b2, tc->video.displayUnit) < 0) // DisplayUnit
+      if (tc->extra.video.displayUnit)
+        if (mk_writeUInt(v, 0x54b2, tc->extra.video.displayUnit) < 0) // DisplayUnit
           return NULL;
       break;
     case MK_TRACK_AUDIO:    // Audio
       if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
         return NULL;
-      if (mk_writeFloat(v, 0xb5, tc->audio.samplingFreq) < 0) // SamplingFrequency
+      if (mk_writeFloat(v, 0xb5, tc->extra.audio.samplingFreq) < 0) // SamplingFrequency
         return NULL;
-      if (mk_writeUInt(v, 0x9f, tc->audio.channels) < 0) // Channels
+      if (mk_writeUInt(v, 0x9f, tc->extra.audio.channels) < 0) // Channels
         return NULL;
-      if (tc->audio.bitDepth)
-        if (mk_writeUInt(v, 0x6264, tc->audio.bitDepth) < 0) // BitDepth
+      if (tc->extra.audio.bitDepth)
+        if (mk_writeUInt(v, 0x6264, tc->extra.audio.bitDepth) < 0) // BitDepth
           return NULL;
       break;
     default:                // Other TODO: Implement other track types.

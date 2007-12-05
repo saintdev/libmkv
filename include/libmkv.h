@@ -112,20 +112,22 @@ struct mk_TrackConfig_s {
   void        *codecPrivate;
   unsigned    codecPrivateSize;
   char        *codecName;
-  struct {
-    char      flagInterlaced;
-    unsigned  pixelWidth;            // Pixel width
-    unsigned  pixelHeight;           // Pixel height
-    unsigned  pixelCrop[4];          // Pixel crop - 0 = bottom, 1 = top, 2 = left, 3 = right
-    unsigned  displayWidth;          // Display width
-    unsigned  displayHeight;         // Display height
-    char      displayUnit;           // Display Units - 0 = pixels, 1 = cm, 2 = in
-  } video;
-  struct {
-    float   samplingFreq;            // Sampling Frequency in Hz
-    unsigned    channels;            // Number of channels for this track
-    unsigned    bitDepth;            // Bits per sample (PCM)
-  } audio;
+  union {
+    struct {
+      char      flagInterlaced;
+      unsigned  pixelWidth;            // Pixel width
+      unsigned  pixelHeight;           // Pixel height
+      unsigned  pixelCrop[4];          // Pixel crop - 0 = bottom, 1 = top, 2 = left, 3 = right
+      unsigned  displayWidth;          // Display width
+      unsigned  displayHeight;         // Display height
+      char      displayUnit;           // Display Units - 0 = pixels, 1 = cm, 2 = in
+    } video;
+    struct {
+      float   samplingFreq;            // Sampling Frequency in Hz
+      unsigned    channels;            // Number of channels for this track
+      unsigned    bitDepth;            // Bits per sample (PCM)
+    } audio;
+  } extra;
 };
 
 mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_compat);
