@@ -22,6 +22,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
 #include "config.h"
+
+#include <uuid/uuid.h>
+
 #include "libmkv.h"
 #include "matroska.h"
 
@@ -109,9 +112,18 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_
 
 int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   mk_Context  *c;
+  uuid_t	segment_uid;
 
   if (w->wrote_header)
     return -1;
+
+  /*
+  * Generate a random UID for this Segment.
+  * NOTE: It is suggested in the Matroska spec to compute the MD5 sum of
+  *       some data parts of the file (the checksum of the Cluster level
+  *       if you use one).
+  */
+  uuid_generate(segment_uid);
 
   if ((c = mk_createContext(w, w->root, 0x1a45dfa3)) == NULL) // EBML
     return -1;
@@ -143,6 +155,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   if ((c = mk_createContext(w, w->root, 0x1549a966)) == NULL) // SegmentInfo
     return -1;
   w->seek_data.segmentinfo = w->root->d_cur - w->segment_ptr;
+  CHECK(mk_writeBin(c, 0x73a4, segment_uid, sizeof(segment_uid)));	/* SegmentUID */
   CHECK(mk_writeStr(c, 0x4d80, PACKAGE_STRING)); // MuxingApp
   CHECK(mk_writeStr(c, 0x5741, writingApp)); // WritingApp
   CHECK(mk_writeUInt(c, 0x2ad7b1, w->timescale)); // TimecodeScale
