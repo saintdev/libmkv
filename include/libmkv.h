@@ -24,10 +24,6 @@
 #ifndef _LIBMKV_H
 #define _LIBMKV_H 1
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifndef _LARGEFILE_SOURCE
 #define _LARGEFILE_SOURCE
 #endif
