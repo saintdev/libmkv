@@ -50,14 +50,19 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
     return NULL;
   if (mk_writeUInt(ti, 0xd7, track->track_id) < 0) // TrackNumber
     return NULL;
-  if (tc->trackUID)
-  {
-    if (mk_writeUInt(ti, 0x73c5, tc->trackUID) < 0) // TrackUID
+  if (tc->trackUID) {
+    if (mk_writeUInt(ti, 0x73c5, tc->trackUID) < 0) /* TrackUID  */
       return NULL;
-  }
-  else
-  {
-    if (mk_writeUInt(ti, 0x73c5, track->track_id) < 0)
+  } else {
+	/*
+	 * If we aren't given a UID, randomly generate one.
+	 * NOTE: It would probably be better to CRC32 some unique track information
+	 *		in place of something completely random.
+	 */
+	unsigned long track_uid;
+	track_uid = random();
+	
+	if (mk_writeUInt(ti, 0x73c5, track_uid) < 0) /* TrackUID  */
       return NULL;
   }
   if (mk_writeUInt(ti, 0x83, tc->trackType) < 0) // TrackType

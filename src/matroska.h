@@ -85,7 +85,6 @@ struct mk_Writer_s {
     int64_t       tc_scaled;
   } cluster;
 
-  int chapter_uid;
   uint8_t vlc_compat;
 };
 

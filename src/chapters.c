@@ -27,19 +27,31 @@
 int   mk_createChapterSimple(mk_Writer *w, uint64_t start, uint64_t end, char *name)
 {
   mk_Context *ca, *cd;
+  unsigned long	chapter_uid;
 
+  /*
+  * Generate a random UID for this Chapter.
+  * NOTE: This probably should be a CRC32 of some unique chapter information.
+  *		In place of being completely random.
+  */
+  chapter_uid = random();
+  
   if (w->chapters == NULL)
   {
+	unsigned long edition_uid;
+	edition_uid = random();
+	
     if ((w->chapters = mk_createContext(w, w->root, 0x1043a770)) == NULL) // Chapters
       return -1;
     if ((w->edition_entry = mk_createContext(w, w->chapters, 0x45b9)) == NULL) // EditionEntry
       return -1;
+	CHECK(mk_writeUInt(w->edition_entry, 0x45bc, edition_uid));	/* EditionUID - See note above about Chapter UID. */
     CHECK(mk_writeUInt(w->edition_entry, 0x45db, 1)); // EditionFlagDefault - Force this to be the default.
     CHECK(mk_writeUInt(w->edition_entry, 0x45dd, 0)); // EditionFlagOrdered - Force simple chapters.
   }
   if ((ca = mk_createContext(w, w->edition_entry, 0xb6)) == NULL) // ChapterAtom
     return -1;
-  CHECK(mk_writeUInt(ca, 0x73c4, ++w->chapter_uid));
+  CHECK(mk_writeUInt(ca, 0x73c4, chapter_uid));	/* ChapterUID */
   CHECK(mk_writeUInt(ca, 0x91, start)); // ChapterTimeStart
   if (end != start)                     // Just create a StartTime if chapter length would be 0.
     CHECK(mk_writeUInt(ca, 0x92, end)); // ChapterTimeEnd
