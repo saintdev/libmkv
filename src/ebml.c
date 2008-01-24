@@ -21,9 +21,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
+#include "config.h"
 #include "libmkv.h"
 #include "matroska.h"
-#include "config.h"
 
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id) {
   mk_Context  *c;
