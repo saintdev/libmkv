@@ -18,6 +18,7 @@ AC_PROG_INSTALL
 AC_DEFINE(_GNU_SOURCE, 1, [GNU C extensions])
 
 # Checks for libraries.
+AC_CHECK_LIB([uuid], [uuid_generate])
 
 # Checks for header files.
 AC_HEADER_STDC
