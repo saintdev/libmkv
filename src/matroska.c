@@ -22,11 +22,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
 #include "config.h"
-
-#include <uuid/uuid.h>
-
 #include "libmkv.h"
 #include "matroska.h"
+#include "md5.h"
 
 int mk_seekFile(mk_Writer *w, uint64_t pos) {
   if (fseek(w->fp, pos, SEEK_SET))
@@ -112,18 +110,12 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_
 
 int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   mk_Context  *c;
-  uuid_t	segment_uid;
+  int64_t offset = 0;
 
   if (w->wrote_header)
     return -1;
 
-  /*
-  * Generate a random UID for this Segment.
-  * NOTE: It is suggested in the Matroska spec to compute the MD5 sum of
-  *       some data parts of the file (the checksum of the Cluster level
-  *       if you use one).
-  */
-  uuid_generate(segment_uid);
+  md5_starts(&w->segment_md5);	/* Initalize MD5 */
 
   if ((c = mk_createContext(w, w->root, 0x1a45dfa3)) == NULL) // EBML
     return -1;
@@ -155,13 +147,15 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   if ((c = mk_createContext(w, w->root, 0x1549a966)) == NULL) // SegmentInfo
     return -1;
   w->seek_data.segmentinfo = w->root->d_cur - w->segment_ptr;
-  CHECK(mk_writeBin(c, 0x73a4, segment_uid, sizeof(segment_uid)));	/* SegmentUID */
+  CHECK(mk_writeVoid(c, 16));	/* Reserve space for a SegmentUID, we'll write the it later. */
   CHECK(mk_writeStr(c, 0x4d80, PACKAGE_STRING)); // MuxingApp
   CHECK(mk_writeStr(c, 0x5741, writingApp)); // WritingApp
   CHECK(mk_writeUInt(c, 0x2ad7b1, w->timescale)); // TimecodeScale
   CHECK(mk_writeFloat(c, 0x4489, 0)); // Duration
   w->duration_ptr = c->d_cur - 4;
-  CHECK(mk_closeContext(c, &w->duration_ptr));
+  CHECK(mk_closeContext(c, &offset));
+  w->duration_ptr += offset;
+  w->segmentuid_ptr = offset;
 
   w->seek_data.tracks = w->root->d_cur - w->segment_ptr;
   
@@ -357,6 +351,8 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
     if ((track->frame.data = mk_createContext(w, NULL, 0)) == NULL)
       return -1;
 
+  md5_update(&w->segment_md5, (unsigned char *)data, size);
+
   return mk_appendContextData(track->frame.data, data, size);
 }
 
@@ -409,6 +405,9 @@ int   mk_close(mk_Writer *w) {
   int64_t max_frame_tc = w->tracks_arr[0]->max_frame_tc;
   uint64_t segment_size = 0;
   unsigned char c_size[8];
+  unsigned char segment_uid[16];
+
+  md5_finish(&w->segment_md5, segment_uid);
 
   for (i = w->num_tracks - 1; i >= 0; i--)
   {
@@ -513,6 +512,11 @@ int   mk_close(mk_Writer *w) {
     if (mk_appendContextData(w->root, &c_size, 8) < 0 ||
         mk_flushContextData(w->root) < 0)
       ret = -1;
+	if (mk_seekFile(w, w->segmentuid_ptr) < 0)
+		ret = -1;
+	if (mk_writeBin(w->root, 0x73a4, segment_uid, sizeof(segment_uid)) < 0 ||
+		mk_flushContextData(w->root) < 0)
+	  ret = -1;
   }
 
   if (mk_closeContext(w->root, 0) < 0)

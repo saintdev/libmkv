@@ -24,6 +24,8 @@
 #ifndef _MATROSKA_H
 #define _MATROSKA_H 1
 
+#include "md5.h"
+
 #define CLSIZE    1048576
 #define CHECK(x)  do { if ((x) < 0) return -1; } while (0)
 
@@ -45,10 +47,10 @@ struct mk_Writer_s {
   uint64_t        f_pos;
   uint64_t        f_eof;
 
-
   int64_t         duration_ptr;
   int64_t         seekhead_ptr;
   int64_t         segment_ptr;
+  int64_t		segmentuid_ptr;
 
   mk_Context      *root;
   mk_Context      *freelist;
@@ -85,6 +87,7 @@ struct mk_Writer_s {
     int64_t       tc_scaled;
   } cluster;
 
+  md5_context	segment_md5;
   uint8_t vlc_compat;
 };
 
