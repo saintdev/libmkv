@@ -47,6 +47,7 @@ mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id) {
     c->owner->actlist->prev = &c->next;
   c->next = c->owner->actlist;
   c->prev = &c->owner->actlist;
+  c->owner->actlist = c;
 
   return c;
 }
