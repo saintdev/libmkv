@@ -25,6 +25,7 @@ AC_CHECK_HEADERS([inttypes.h stdint.h stdlib.h string.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
+AC_SYS_LARGEFILE
 AC_TYPE_INT64_T
 AC_TYPE_SIZE_T
 AC_TYPE_INT8_T
