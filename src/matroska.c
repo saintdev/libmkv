@@ -45,7 +45,7 @@ char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size) {
   char *laced = calloc(alloc_size, sizeof(char));
   if (laced == NULL)
     return NULL;
-  
+
   laced[offset++] = num_frames;
   for (i = 0; i < num_frames; i++)
   {
@@ -158,7 +158,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   w->segmentuid_ptr = offset;
 
   w->seek_data.tracks = w->root->d_cur - w->segment_ptr;
-  
+
   if (w->tracks)
     CHECK(mk_closeContext(w->tracks, 0));
 
@@ -246,7 +246,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
 		  break;
 	  }
   }
-  
+
   fsize = track->frame.data ? track->frame.data->d_cur : 0;
   bgsize = fsize + 4 + mk_ebmlSizeSize(fsize + 4 + length) + 1 + length;
   if (!track->frame.keyframe) {
@@ -446,7 +446,7 @@ int   mk_close(mk_Writer *w) {
     if (mk_flushContextData(w->root) < 0)
       ret = -1;
   }
-  
+
   if (w->chapters != NULL)
   {
     if (w->vlc_compat) {
