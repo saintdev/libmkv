@@ -42,16 +42,16 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 
   if (w->tracks == NULL)
   {
-    if ((w->tracks = mk_createContext(w, w->root, 0x1654ae6b)) == NULL) // tracks
+    if ((w->tracks = mk_createContext(w, w->root, MATROSKA_ID_TRACKS)) == NULL) // tracks
       return NULL;
   }
 
-  if ((ti = mk_createContext(w, w->tracks, 0xae)) == NULL) // TrackEntry
+  if ((ti = mk_createContext(w, w->tracks, MATROSKA_ID_TRACKENTRY)) == NULL) // TrackEntry
     return NULL;
-  if (mk_writeUInt(ti, 0xd7, track->track_id) < 0) // TrackNumber
+  if (mk_writeUInt(ti, MATROSKA_ID_TRACKNUMBER, track->track_id) < 0) // TrackNumber
     return NULL;
   if (tc->trackUID) {
-    if (mk_writeUInt(ti, 0x73c5, tc->trackUID) < 0) /* TrackUID  */
+    if (mk_writeUInt(ti, MATROSKA_ID_TRACKUID, tc->trackUID) < 0) /* TrackUID  */
       return NULL;
   } else {
 	/*
@@ -61,76 +61,79 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 	 */
 	unsigned long track_uid;
 	track_uid = random();
-	
-	if (mk_writeUInt(ti, 0x73c5, track_uid) < 0) /* TrackUID  */
+
+	if (mk_writeUInt(ti, MATROSKA_ID_TRACKUID, track_uid) < 0) /* TrackUID  */
       return NULL;
   }
-  if (mk_writeUInt(ti, 0x83, tc->trackType) < 0) // TrackType
+  if (mk_writeUInt(ti, MATROSKA_ID_TRACKTYPE, tc->trackType) < 0) // TrackType
     return NULL;
   track->track_type = tc->trackType;
-  if (mk_writeUInt(ti, 0x9c, tc->flagLacing) < 0) // FlagLacing
+  if (mk_writeUInt(ti, MATROSKA_ID_TRACKFLAGLACING, tc->flagLacing) < 0) // FlagLacing
     return NULL;
-  if (mk_writeStr(ti, 0x86, tc->codecID) < 0) // CodecID
+  if (mk_writeStr(ti, MATROSKA_ID_CODECID, tc->codecID) < 0) // CodecID
     return NULL;
   if (tc->codecPrivateSize && (tc->codecPrivate != NULL))
-    if (mk_writeBin(ti, 0x63a2, tc->codecPrivate, tc->codecPrivateSize) < 0) // CodecPrivate
+    if (mk_writeBin(ti, MATROSKA_ID_CODECPRIVATE, tc->codecPrivate, tc->codecPrivateSize) < 0) // CodecPrivate
       return NULL;
   if (tc->defaultDuration) {
-    if (mk_writeUInt(ti, 0x23e383, tc->defaultDuration) < 0)
+    if (mk_writeUInt(ti, MATROSKA_ID_TRACKDEFAULTDURATION, tc->defaultDuration) < 0)
       return NULL;
     track->default_duration = tc->defaultDuration;
   }
   if (tc->language)
-    if (mk_writeStr(ti, 0x22b59c, tc->language) < 0)  // Language
+    if (mk_writeStr(ti, MATROSKA_ID_TRACKLANGUAGE, tc->language) < 0)  // Language
       return NULL;
   if (tc->flagEnabled != 1)
-    if (mk_writeUInt(ti, 0xb9, tc->flagEnabled) < 0) // FlagEnabled
+    if (mk_writeUInt(ti, MATROSKA_ID_TRACKFLAGENABLED, tc->flagEnabled) < 0) // FlagEnabled
       return NULL;
-  if (mk_writeUInt(ti, 0x88, tc->flagDefault) < 0) // FlagDefault
+  if (mk_writeUInt(ti, MATROSKA_ID_TRACKFLAGDEFAULT, tc->flagDefault) < 0) // FlagDefault
     return NULL;
   if (tc->flagForced)
-    if (mk_writeUInt(ti, 0x55aa, tc->flagForced) < 0) // FlagForced
+    if (mk_writeUInt(ti, MATROSKA_ID_TRACKFLAGFORCED, tc->flagForced) < 0) // FlagForced
       return NULL;
   if (tc->minCache)
-    if (mk_writeUInt(ti, 0x6de7, tc->minCache) < 0) // MinCache
+    if (mk_writeUInt(ti, MATROSKA_ID_TRACKMINCACHE, tc->minCache) < 0) // MinCache
       return NULL;
   /* FIXME: this won't handle NULL values, which signals that the cache is disabled. */
   if (tc->maxCache)
-    if (mk_writeUInt(ti, 0x6df8, tc->maxCache) < 0) // MaxCache
+    if (mk_writeUInt(ti, MATROSKA_ID_TRACKMAXCACHE, tc->maxCache) < 0) // MaxCache
       return NULL;
 
   switch (tc->trackType)
   {
     case MK_TRACK_VIDEO:    // Video
-      if ((v = mk_createContext(w, ti, 0xe0)) == NULL)
+      if ((v = mk_createContext(w, ti, MATROSKA_ID_TRACKVIDEO)) == NULL)
         return NULL;
       if (tc->extra.video.pixelCrop[0] != 0 || tc->extra.video.pixelCrop[1] != 0 || tc->extra.video.pixelCrop[2] != 0 || tc->extra.video.pixelCrop[3] != 0) {
         for (i = 0; i < 4; i++) {
-          if (mk_writeUInt(v, 0x54aa + (i * 0x11), tc->extra.video.pixelCrop[i]) < 0) // PixelCrop
+          /* Each pixel crop ID is 0x11 away from the next.
+           * In order from 0x54AA to 0x54DD they are bottom, top, left, right.
+           */
+          if (mk_writeUInt(v, MATROSKA_ID_VIDEOPIXELCROPBOTTOM + (i * 0x11), tc->extra.video.pixelCrop[i]) < 0) // PixelCrop
             return NULL;
         }
       }
-      if (mk_writeUInt(v, 0xb0, tc->extra.video.pixelWidth) < 0) // PixelWidth
+      if (mk_writeUInt(v, MATROSKA_ID_VIDEOPIXELWIDTH, tc->extra.video.pixelWidth) < 0) // PixelWidth
         return NULL;
-      if (mk_writeUInt(v, 0xba, tc->extra.video.pixelHeight) < 0 ) // PixelHeight
+      if (mk_writeUInt(v, MATROSKA_ID_VIDEOPIXELHEIGHT, tc->extra.video.pixelHeight) < 0 ) // PixelHeight
         return NULL;
-      if (mk_writeUInt(v, 0x54b0, tc->extra.video.displayWidth) < 0) // DisplayWidth
+      if (mk_writeUInt(v, MATROSKA_ID_VIDEODISPLAYWIDTH, tc->extra.video.displayWidth) < 0) // DisplayWidth
         return NULL;
-      if (mk_writeUInt(v, 0x54ba, tc->extra.video.displayHeight) < 0) // DisplayHeight
+      if (mk_writeUInt(v, MATROSKA_ID_VIDEODISPLAYHEIGHT, tc->extra.video.displayHeight) < 0) // DisplayHeight
         return NULL;
       if (tc->extra.video.displayUnit)
-        if (mk_writeUInt(v, 0x54b2, tc->extra.video.displayUnit) < 0) // DisplayUnit
+        if (mk_writeUInt(v, MATROSKA_ID_VIDEODISPLAYUNIT, tc->extra.video.displayUnit) < 0) // DisplayUnit
           return NULL;
       break;
     case MK_TRACK_AUDIO:    // Audio
-      if ((v = mk_createContext(w, ti, 0xe1)) == NULL)
+      if ((v = mk_createContext(w, ti, MATROSKA_ID_TRACKAUDIO)) == NULL)
         return NULL;
-      if (mk_writeFloat(v, 0xb5, tc->extra.audio.samplingFreq) < 0) // SamplingFrequency
+      if (mk_writeFloat(v, MATROSKA_ID_AUDIOSAMPLINGFREQ, tc->extra.audio.samplingFreq) < 0) // SamplingFrequency
         return NULL;
-      if (mk_writeUInt(v, 0x9f, tc->extra.audio.channels) < 0) // Channels
+      if (mk_writeUInt(v, MATROSKA_ID_AUDIOCHANNELS, tc->extra.audio.channels) < 0) // Channels
         return NULL;
       if (tc->extra.audio.bitDepth)
-        if (mk_writeUInt(v, 0x6264, tc->extra.audio.bitDepth) < 0) // BitDepth
+        if (mk_writeUInt(v, MATROSKA_ID_AUDIOBITDEPTH, tc->extra.audio.bitDepth) < 0) // BitDepth
           return NULL;
       break;
     default:                // Other TODO: Implement other track types.

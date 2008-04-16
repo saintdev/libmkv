@@ -79,7 +79,7 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_
     return NULL;
   }
 
-  if ((w->cues = mk_createContext(w, w->root, 0x1c53bb6b)) == NULL) // Cues
+  if ((w->cues = mk_createContext(w, w->root, MATROSKA_ID_CUES)) == NULL) // Cues
   {
     mk_destroyContexts(w);
     free(w);
@@ -87,7 +87,7 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale, uint8_t vlc_
   }
 
   if (vlc_compat) {
-    if ((w->cluster.seekhead = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
+    if ((w->cluster.seekhead = mk_createContext(w, w->root, MATROSKA_ID_SEEKHEAD)) == NULL) // SeekHead
     {
       mk_destroyContexts(w);
       free(w);
@@ -117,18 +117,18 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
 
   md5_starts(&w->segment_md5);	/* Initalize MD5 */
 
-  if ((c = mk_createContext(w, w->root, 0x1a45dfa3)) == NULL) // EBML
+  if ((c = mk_createContext(w, w->root, EBML_ID_HEADER)) == NULL) // EBML
     return -1;
-  CHECK(mk_writeUInt(c, 0x4286, 1)); // EBMLVersion
-  CHECK(mk_writeUInt(c, 0x42f7, 1)); // EBMLReadVersion
-  CHECK(mk_writeUInt(c, 0x42f2, 4)); // EBMLMaxIDLength
-  CHECK(mk_writeUInt(c, 0x42f3, 8)); // EBMLMaxSizeLength
-  CHECK(mk_writeStr(c, 0x4282, "matroska")); // DocType
-  CHECK(mk_writeUInt(c, 0x4287, 1)); // DocTypeVersion
-  CHECK(mk_writeUInt(c, 0x4285, 1)); // DocTypeReadversion
+  CHECK(mk_writeUInt(c, EBML_ID_EBMLVERSION, EBML_VERSION)); // EBMLVersion
+  CHECK(mk_writeUInt(c, EBML_ID_EBMLREADVERSION, EBML_VERSION)); // EBMLReadVersion
+  CHECK(mk_writeUInt(c, EBML_ID_EBMLMAXIDLENGTH, 4)); // EBMLMaxIDLength
+  CHECK(mk_writeUInt(c, EBML_ID_EBMLMAXSIZELENGTH, 8)); // EBMLMaxSizeLength
+  CHECK(mk_writeStr(c, EBML_ID_DOCTYPE, "matroska")); // DocType
+  CHECK(mk_writeUInt(c, EBML_ID_DOCTYPEVERSION, MATROSKA_VERSION)); // DocTypeVersion
+  CHECK(mk_writeUInt(c, EBML_ID_DOCTYPEREADVERSION, MATROSKA_VERSION)); // DocTypeReadversion
   CHECK(mk_closeContext(c, 0));
 
-  if ((c = mk_createContext(w, w->root, 0x18538067)) == NULL) // Segment
+  if ((c = mk_createContext(w, w->root, MATROSKA_ID_SEGMENT)) == NULL) // Segment
     return -1;
   CHECK(mk_flushContextID(c));
   w->segment_ptr = c->d_cur;
@@ -144,14 +144,14 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
     w->seek_data.seekhead = 0;
   }
 
-  if ((c = mk_createContext(w, w->root, 0x1549a966)) == NULL) // SegmentInfo
+  if ((c = mk_createContext(w, w->root, MATROSKA_ID_INFO)) == NULL) // SegmentInfo
     return -1;
   w->seek_data.segmentinfo = w->root->d_cur - w->segment_ptr;
   CHECK(mk_writeVoid(c, 16));	/* Reserve space for a SegmentUID, we'll write the it later. */
-  CHECK(mk_writeStr(c, 0x4d80, PACKAGE_STRING)); // MuxingApp
-  CHECK(mk_writeStr(c, 0x5741, writingApp)); // WritingApp
-  CHECK(mk_writeUInt(c, 0x2ad7b1, w->timescale)); // TimecodeScale
-  CHECK(mk_writeFloat(c, 0x4489, 0)); // Duration
+  CHECK(mk_writeStr(c, MATROSKA_ID_MUXINGAPP, PACKAGE_STRING)); // MuxingApp
+  CHECK(mk_writeStr(c, MATROSKA_ID_WRITINGAPP, writingApp)); // WritingApp
+  CHECK(mk_writeUInt(c, MATROSKA_ID_TIMECODESCALE, w->timescale)); // TimecodeScale
+  CHECK(mk_writeFloat(c, MATROSKA_ID_DURATION, 0)); // Duration
   w->duration_ptr = c->d_cur - 4;
   CHECK(mk_closeContext(c, &offset));
   w->duration_ptr += offset;
@@ -197,7 +197,7 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
 
   if (w->cluster.context == NULL) {
     w->cluster.tc_scaled = track->frame.timecode / w->timescale;
-    w->cluster.context = mk_createContext(w, w->root, 0x1f43b675); // Cluster
+    w->cluster.context = mk_createContext(w, w->root, MATROSKA_ID_CLUSTER); // Cluster
     if (w->cluster.context == NULL)
       return -1;
 
@@ -215,9 +215,9 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
 	}
 
     if (w->vlc_compat)
-      CHECK(mk_writeSeek(w, w->cluster.seekhead, 0x1f43b675, w->cluster.pointer));
+      CHECK(mk_writeSeek(w, w->cluster.seekhead, MATROSKA_ID_CLUSTER, w->cluster.pointer));
 
-    CHECK(mk_writeUInt(w->cluster.context, 0xe7, w->cluster.tc_scaled)); // Cluster Timecode
+    CHECK(mk_writeUInt(w->cluster.context, MATROSKA_ID_CLUSTERTIMECODE, w->cluster.tc_scaled)); // Cluster Timecode
 
     w->cluster.block_count = 0;
   }
@@ -254,9 +254,9 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     bgsize += 1 + 1 + mk_ebmlSIntSize(ref);
   }
 
-  CHECK(mk_writeID(w->cluster.context, 0xa0)); // BlockGroup
+  CHECK(mk_writeID(w->cluster.context, MATROSKA_ID_BLOCKGROUP)); // BlockGroup
   CHECK(mk_writeSize(w->cluster.context, bgsize));
-  CHECK(mk_writeID(w->cluster.context, 0xa1)); // Block
+  CHECK(mk_writeID(w->cluster.context, MATROSKA_ID_BLOCK)); // Block
   CHECK(mk_writeSize(w->cluster.context, fsize + 4 + length));	// Block size
   CHECK(mk_writeSize(w->cluster.context, track->track_id)); // track number
 
@@ -289,20 +289,20 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
     track->frame.data->d_cur = 0;
   }
   if (!track->frame.keyframe)
-    CHECK(mk_writeSInt(w->cluster.context, 0xfb, ref)); // ReferenceBlock
+    CHECK(mk_writeSInt(w->cluster.context, MATROSKA_ID_REFERENCEBLOCK, ref)); // ReferenceBlock
 
   /* This may get a little out of hand, but it seems sane enough for now. */
   if (track->frame.keyframe && (track->track_type == MK_TRACK_VIDEO)) {
 //   if (track->frame.keyframe && (track->track_type & MK_TRACK_VIDEO) && ((track->prev_cue_pos + 3*CLSIZE) <= w->f_pos || track->frame.timecode == 0)) {
-    if ((c = mk_createContext(w, w->cues, 0xbb)) == NULL)  // CuePoint
+    if ((c = mk_createContext(w, w->cues, MATROSKA_ID_CUEPOINT)) == NULL)  // CuePoint
       return -1;
-    CHECK(mk_writeUInt(c, 0xb3, (track->frame.timecode / w->timescale))); // CueTime
+    CHECK(mk_writeUInt(c, MATROSKA_ID_CUETIME, (track->frame.timecode / w->timescale))); // CueTime
 
-    if ((tp = mk_createContext(w, c, 0xb7)) == NULL)  // CueTrackPositions
+    if ((tp = mk_createContext(w, c, MATROSKA_ID_CUETRACKPOSITIONS)) == NULL)  // CueTrackPositions
       return -1;
-    CHECK(mk_writeUInt(tp, 0xf7, track->track_id)); // CueTrack
-    CHECK(mk_writeUInt(tp, 0xf1, w->cluster.pointer));  // CueClusterPosition
-//     CHECK(mk_writeUInt(c, 0x5378, w->cluster.block_count));  // CueBlockNumber
+    CHECK(mk_writeUInt(tp, MATROSKA_ID_CUETRACK, track->track_id)); // CueTrack
+    CHECK(mk_writeUInt(tp, MATROSKA_ID_CUECLUSTERPOSITION, w->cluster.pointer));  // CueClusterPosition
+//     CHECK(mk_writeUInt(c, MATROSKA_ID_CUEBLOCKNUMBER, w->cluster.block_count));  // CueBlockNumber
     CHECK(mk_closeContext(tp, 0));
     CHECK(mk_closeContext(c, 0));
     track->prev_cue_pos = w->f_pos;
@@ -371,10 +371,10 @@ int   mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned 
 int   mk_writeSeek(mk_Writer *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos) {
   mk_Context  *s;
 
-  if ((s = mk_createContext(w, c, 0x4dbb)) == NULL) // Seek
+  if ((s = mk_createContext(w, c, MATROSKA_ID_SEEKENTRY)) == NULL) // Seek
     return -1;
-  CHECK(mk_writeUInt(s, 0x53ab, seek_id));  // SeekID
-  CHECK(mk_writeUInt(s, 0x53ac, seek_pos)); // SeekPosition
+  CHECK(mk_writeUInt(s, MATROSKA_ID_SEEKID, seek_id));  // SeekID
+  CHECK(mk_writeUInt(s, MATROSKA_ID_SEEKPOSITION, seek_pos)); // SeekPosition
   CHECK(mk_closeContext(s, 0));
 
   return 0;
@@ -385,24 +385,24 @@ int mk_writeSeekHead(mk_Writer *w, int64_t *pointer) {
   mk_Context  *c;
   int64_t   seekhead_ptr;
 
-  if ((c = mk_createContext(w, w->root, 0x114d9b74)) == NULL) // SeekHead
+  if ((c = mk_createContext(w, w->root, MATROSKA_ID_SEEKHEAD)) == NULL) // SeekHead
     return -1;
   if (pointer != NULL)
     seekhead_ptr = w->f_pos;
   if (w->seek_data.seekhead)
-    CHECK(mk_writeSeek(w, c, 0x114d9b74, w->seek_data.seekhead));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_SEEKHEAD, w->seek_data.seekhead));
   if (w->seek_data.segmentinfo)
-    CHECK(mk_writeSeek(w, c, 0x1549a966, w->seek_data.segmentinfo));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_INFO, w->seek_data.segmentinfo));
   if (w->seek_data.tracks)
-    CHECK(mk_writeSeek(w, c, 0x1654ae6b, w->seek_data.tracks));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_TRACKS, w->seek_data.tracks));
   if (w->seek_data.cues)
-    CHECK(mk_writeSeek(w, c, 0x1c53bb6b, w->seek_data.cues));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_CUES, w->seek_data.cues));
   if (w->seek_data.attachments)
-    CHECK(mk_writeSeek(w, c, 0x1941a469, w->seek_data.attachments));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_ATTACHMENTS, w->seek_data.attachments));
   if (w->seek_data.chapters)
-    CHECK(mk_writeSeek(w, c, 0x1043a770, w->seek_data.chapters));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_CHAPTERS, w->seek_data.chapters));
   if (w->seek_data.tags)
-    CHECK(mk_writeSeek(w, c, 0x1254c367, w->seek_data.tags));
+    CHECK(mk_writeSeek(w, c, MATROSKA_ID_TAGS, w->seek_data.tags));
   CHECK(mk_closeContext(c, 0));
 
   if (pointer != NULL)
