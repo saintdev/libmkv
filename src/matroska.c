@@ -526,7 +526,7 @@ int   mk_close(mk_Writer *w) {
       ret = -1;
 	if (mk_seekFile(w, w->segmentuid_ptr) < 0)
 		ret = -1;
-	if (mk_writeBin(w->root, 0x73a4, segment_uid, sizeof(segment_uid)) < 0 ||
+    if (mk_writeBin(w->root, MATROSKA_ID_SEGMENTUID, segment_uid, sizeof(segment_uid)) < 0 ||
 		mk_flushContextData(w->root) < 0)
 	  ret = -1;
   }

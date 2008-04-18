@@ -299,7 +299,7 @@ int    mk_writeFloat(mk_Context *c, unsigned id, float f) {
 int    mk_writeVoid(mk_Context *c, uint64_t length) {
   char *c_void = calloc(length, sizeof(char));
 
-  CHECK(mk_writeID(c, 0xec));
+  CHECK(mk_writeID(c, EBML_ID_VOID));
   CHECK(mk_writeSize(c, length));
   CHECK(mk_appendContextData(c, c_void, length));
   free(c_void);
