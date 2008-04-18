@@ -27,6 +27,8 @@
 
 /* TODO: Figure out what can actually fail without damaging the track. */
 
+#define TRACK_STEP 4
+
 mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 {
   mk_Context *ti, *v;
@@ -35,8 +37,12 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
   if (track == NULL)
     return NULL;
 
-  if ((w->tracks_arr = realloc(w->tracks_arr, (w->num_tracks + 1) * sizeof(mk_Track *))) == NULL)
-    return NULL; // FIXME
+  if (w->num_tracks + 1 > w->alloc_tracks)
+  {
+    if ((w->tracks_arr = realloc(w->tracks_arr, (w->alloc_tracks + TRACK_STEP) * sizeof(mk_Track *))) == NULL)
+      return NULL; // FIXME
+    w->alloc_tracks += TRACK_STEP;
+  }
   w->tracks_arr[w->num_tracks] = track;
   track->track_id = ++w->num_tracks;
 

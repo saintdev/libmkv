@@ -237,6 +237,7 @@ struct mk_Writer_s {
   uint8_t         wrote_header;
 
   uint8_t         num_tracks;
+  uint8_t         alloc_tracks;
   mk_Track        **tracks_arr;
 
   struct {
