@@ -305,13 +305,6 @@ unsigned    mk_ebmlSIntSize(int64_t si);
 int         mk_writeEbmlHeader(mk_Writer *w, const char * doctype, uint64_t doctype_version, uint64_t doctype_readversion );
 /* EBML */
 
-mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
-int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
-int         mk_writeFloat(mk_Context *c, unsigned id, float f);
-int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
-int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
-int         mk_flushContextData(mk_Context *c);
-int         mk_closeContext(mk_Context *c, int64_t *off);
 int         mk_writeSeek(mk_Writer *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos);
 int         mk_writeSeekHead(mk_Writer *w, int64_t *pointer);
 int         mk_writeTracks(mk_Writer *w, mk_Context *tracks);
