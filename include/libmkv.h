@@ -94,6 +94,7 @@ extern "C" {
 #define MK_SUBTITLE_ASS    "S_TEXT/ASS"
 #define MK_SUBTITLE_USF    "S_TEXT/USF"
 #define MK_SUBTITLE_VOBSUB "S_VOBSUB"
+#define MK_SUBTITLE_BMP    "S_IMAGE/BMP"
 
 #define MK_TRACK_VIDEO     0x01
 #define MK_TRACK_AUDIO     0x02
