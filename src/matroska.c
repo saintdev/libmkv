@@ -26,6 +26,11 @@
 #include "matroska.h"
 #include "md5.h"
 
+#define RESERVED_SEEKHEAD 0x100
+/* 256 bytes should be enough room for our Seek entries. */
+#define RESERVED_CHAPTERS 0x800
+/* 2048 bytes, hopefully enough for Chapters. */
+
 int mk_seekFile(mk_Writer *w, uint64_t pos) {
   if (fseek(w->fp, pos, SEEK_SET))
     return -1;
@@ -126,8 +131,8 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   CHECK(mk_closeContext(c, &w->segment_ptr));
 
   if (w->vlc_compat) {
-    CHECK(mk_writeVoid(w->root, 0x100));  // 256 bytes should be enough room for our Seek entries.
-    CHECK(mk_writeVoid(w->root, 0x800)); // 2048 bytes for Chapters.
+    CHECK(mk_writeVoid(w->root, RESERVED_SEEKHEAD));    /* Reserved space for SeekHead */
+    CHECK(mk_writeVoid(w->root, RESERVED_CHAPTERS));    /* Reserved space for Chapters */
   }
   else {
     w->seek_data.seekhead = 0x80000000;
