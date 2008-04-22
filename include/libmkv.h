@@ -106,12 +106,12 @@ typedef enum {
     MK_TRACK_CONTROL  = 0x20
 } mk_TrackType;
 
-typedef enum mk_LacingTypesEnum {
+typedef enum {
     MK_LACING_NONE = 0x00,
     MK_LACING_XIPH,
     MK_LACING_FIXED,
     MK_LACING_EBML
-} mk_LacingTypes;
+} mk_LacingType;
 
 typedef struct mk_Writer_s mk_Writer;
 typedef struct mk_Track_s mk_Track;
@@ -159,7 +159,7 @@ int  mk_writeHeader(mk_Writer *w, const char *writingApp);
 int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned size);
 int  mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe);
-int  mk_setFrameLacing(mk_Writer *w, mk_Track *track, mk_LacingTypes lacing, uint8_t num_frames, uint64_t sizes[]);
+int  mk_setFrameLacing(mk_Writer *w, mk_Track *track, mk_LacingType lacing, uint8_t num_frames, uint64_t sizes[]);
 int  mk_createChapterSimple(mk_Writer *w, uint64_t start, uint64_t end, char *name);
 int  mk_close( mk_Writer *w );
 

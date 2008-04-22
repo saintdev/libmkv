@@ -331,7 +331,7 @@ int   mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigne
   return 0;
 }
 
-int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, mk_LacingTypes lacing, uint8_t num_frames, uint64_t sizes[]) {
+int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, mk_LacingType lacing, uint8_t num_frames, uint64_t sizes[]) {
   if (!track->in_frame)
     return -1;
   track->frame.lacing_sizes = calloc(num_frames, sizeof(uint64_t));
