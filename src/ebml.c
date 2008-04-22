@@ -76,6 +76,23 @@ int    mk_appendContextData(mk_Context *c, const void *data, uint64_t size) {
   return 0;
 }
 
+int mk_writeEbmlHeader(mk_Writer *w, const char *doctype, uint64_t doctype_version, uint64_t doctype_readversion) {
+    mk_Context *c = NULL;
+
+    if ((c = mk_createContext(w, w->root, EBML_ID_HEADER)) == NULL) // EBML
+        return -1;
+    CHECK(mk_writeUInt(c, EBML_ID_EBMLVERSION, EBML_VERSION)); // EBMLVersion
+    CHECK(mk_writeUInt(c, EBML_ID_EBMLREADVERSION, EBML_VERSION)); // EBMLReadVersion
+    CHECK(mk_writeUInt(c, EBML_ID_EBMLMAXIDLENGTH, 4)); // EBMLMaxIDLength
+    CHECK(mk_writeUInt(c, EBML_ID_EBMLMAXSIZELENGTH, 8)); // EBMLMaxSizeLength
+    CHECK(mk_writeStr(c, EBML_ID_DOCTYPE, doctype)); // DocType
+    CHECK(mk_writeUInt(c, EBML_ID_DOCTYPEVERSION, doctype_version)); // DocTypeVersion
+    CHECK(mk_writeUInt(c, EBML_ID_DOCTYPEREADVERSION, doctype_readversion)); // DocTypeReadversion
+    CHECK(mk_closeContext(c, 0));
+
+    return 0;
+}
+
 int    mk_writeID(mk_Context *c, unsigned id) {
   unsigned char   c_id[4] = { id >> 24, id >> 16, id >> 8, id };
 

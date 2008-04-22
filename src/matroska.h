@@ -302,6 +302,7 @@ int         mk_writeFloat(mk_Context *c, unsigned id, float f);
 int         mk_writeVoid(mk_Context *c, uint64_t length);
 unsigned    mk_ebmlSizeSize(uint64_t s);
 unsigned    mk_ebmlSIntSize(int64_t si);
+int         mk_writeEbmlHeader(mk_Writer *w, const char * doctype, uint64_t doctype_version, uint64_t doctype_readversion );
 /* EBML */
 
 mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);

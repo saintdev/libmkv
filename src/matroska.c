@@ -117,16 +117,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
 
   md5_starts(&w->segment_md5);	/* Initalize MD5 */
 
-  if ((c = mk_createContext(w, w->root, EBML_ID_HEADER)) == NULL) // EBML
-    return -1;
-  CHECK(mk_writeUInt(c, EBML_ID_EBMLVERSION, EBML_VERSION)); // EBMLVersion
-  CHECK(mk_writeUInt(c, EBML_ID_EBMLREADVERSION, EBML_VERSION)); // EBMLReadVersion
-  CHECK(mk_writeUInt(c, EBML_ID_EBMLMAXIDLENGTH, 4)); // EBMLMaxIDLength
-  CHECK(mk_writeUInt(c, EBML_ID_EBMLMAXSIZELENGTH, 8)); // EBMLMaxSizeLength
-  CHECK(mk_writeStr(c, EBML_ID_DOCTYPE, "matroska")); // DocType
-  CHECK(mk_writeUInt(c, EBML_ID_DOCTYPEVERSION, MATROSKA_VERSION)); // DocTypeVersion
-  CHECK(mk_writeUInt(c, EBML_ID_DOCTYPEREADVERSION, MATROSKA_VERSION)); // DocTypeReadversion
-  CHECK(mk_closeContext(c, 0));
+  CHECK(mk_writeEbmlHeader(w, "matroska", MATROSKA_VERSION, MATROSKA_VERSION));
 
   if ((c = mk_createContext(w, w->root, MATROSKA_ID_SEGMENT)) == NULL) // Segment
     return -1;
