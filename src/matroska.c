@@ -199,22 +199,12 @@ int   mk_flushFrame(mk_Writer *w, mk_Track *track) {
 
     w->cluster.pointer = w->f_pos - w->segment_ptr;
 
-	/*
-	 * Dirty HACK: This is for HandBrake/VLC. The first timecode we get isnt't
-	 * always 0, if not we set it to 0.
-	 */
-	if (w->cluster.count == 0 && w->vlc_compat && track->frame.timecode != 0) {
-		w->cluster.tc_scaled = 0;
-		delta = track->frame.timecode/w->timescale;
-	} else {
-		delta = 0;
-	}
-
     if (w->vlc_compat)
       CHECK(mk_writeSeek(w, w->cluster.seekhead, MATROSKA_ID_CLUSTER, w->cluster.pointer));
 
     CHECK(mk_writeUInt(w->cluster.context, MATROSKA_ID_CLUSTERTIMECODE, w->cluster.tc_scaled)); // Cluster Timecode
 
+    delta = 0;
     w->cluster.block_count = 0;
   }
 
