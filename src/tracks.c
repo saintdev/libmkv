@@ -130,6 +130,9 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
       if (tc->extra.video.displayUnit)
         if (mk_writeUInt(v, MATROSKA_ID_VIDEODISPLAYUNIT, tc->extra.video.displayUnit) < 0) // DisplayUnit
           return NULL;
+      if (tc->extra.video.aspectRatioType != MK_ASPECTRATIO_FREE)
+        if (mk_writeUInt(v, MATROSKA_ID_VIDEOASPECTRATIOTYPE, tc->extra.video.aspectRatioType) < 0) /* AspectRatioType */
+          return NULL;
       break;
     case MK_TRACK_AUDIO:    // Audio
       if ((v = mk_createContext(w, ti, MATROSKA_ID_TRACKAUDIO)) == NULL)

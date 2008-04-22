@@ -113,6 +113,12 @@ typedef enum {
     MK_LACING_EBML
 } mk_LacingType;
 
+typedef enum {
+    MK_ASPECTRATIO_FREE = 0x00,
+    MK_ASPECTRATIO_KEEP,
+    MK_ASPECTRATIO_FIXED
+} mk_AspectType;
+
 typedef struct mk_Writer_s mk_Writer;
 typedef struct mk_Track_s mk_Track;
 typedef struct mk_TrackConfig_s mk_TrackConfig;
@@ -142,6 +148,7 @@ struct mk_TrackConfig_s {
       unsigned  displayWidth;          // Display width
       unsigned  displayHeight;         // Display height
       char      displayUnit;           // Display Units - 0 = pixels, 1 = cm, 2 = in
+      mk_AspectType aspectRatioType;   /* Specifies the possible modifications to the aspect ratio */
     } video;
     struct {
       float   samplingFreq;            // Sampling Frequency in Hz
