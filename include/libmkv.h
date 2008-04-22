@@ -24,6 +24,10 @@
 #ifndef _LIBMKV_H
 #define _LIBMKV_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,10 +83,6 @@ typedef enum mk_LacingTypesEnum {
     MK_LACING_EBML
 } mk_LacingTypes;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct mk_Writer_s mk_Writer;
 typedef struct mk_Track_s mk_Track;
 typedef struct mk_TrackConfig_s mk_TrackConfig;
@@ -137,6 +137,6 @@ char  *mk_laceXiph(uint64_t *sizes, uint8_t num_frames, uint64_t *output_size);
 
 #ifdef __cplusplus
 }
-#endif
+#endif /* __cplusplus */
 
-#endif
+#endif /* _LIBMKV_H */
