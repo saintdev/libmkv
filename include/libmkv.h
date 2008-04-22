@@ -39,12 +39,22 @@ extern "C" {
 #endif
 
 /* Video codecs */
+#define MK_VCODEC_RAW      "V_UNCOMPRESSED"
 #define MK_VCODEC_MPEG1    "V_MPEG1"
 #define MK_VCODEC_MPEG2    "V_MPEG2"
 #define MK_VCODEC_THEORA   "V_THEORA"
 #define MK_VCODEC_SNOW     "V_SNOW"
+#define MK_VCODEC_MP4SP    "V_MPEG4/ISO/SP"
 #define MK_VCODEC_MP4ASP   "V_MPEG4/ISO/ASP"
+#define MK_VCODEC_MP4AP    "V_MPEG4/ISO/AP"
 #define MK_VCODEC_MP4AVC   "V_MPEG4/ISO/AVC"
+#define MK_VCODEC_MSVCM    "V_MS/VFW/FOURCC"
+#define MK_VCODEC_MSMP4V3  "V_MPEG4/MS/V3"
+#define MK_VCODEC_REAL10   "V_REAL/RV10"
+#define MK_VCODEC_REAL20   "V_REAL/RV20"
+#define MK_VCODEC_REAL30   "V_REAL/RV30"
+#define MK_VCODEC_REAL40   "V_REAL/RV40"
+#define MK_VCODEC_QUICKTIME "V_QUICKTIME"
 
 /* Audio codecs */
 #define MK_ACODEC_AC3      "A_AC3"
