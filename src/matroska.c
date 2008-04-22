@@ -143,7 +143,7 @@ int   mk_writeHeader(mk_Writer *w, const char *writingApp) {
   if ((c = mk_createContext(w, w->root, MATROSKA_ID_INFO)) == NULL) // SegmentInfo
     return -1;
   w->seek_data.segmentinfo = w->root->d_cur - w->segment_ptr;
-  CHECK(mk_writeVoid(c, 16));	/* Reserve space for a SegmentUID, we'll write the it later. */
+  CHECK(mk_writeVoid(c, 16));	/* Reserve space for a SegmentUID, write it later. */
   CHECK(mk_writeStr(c, MATROSKA_ID_MUXINGAPP, PACKAGE_STRING)); // MuxingApp
   CHECK(mk_writeStr(c, MATROSKA_ID_WRITINGAPP, writingApp)); // WritingApp
   CHECK(mk_writeUInt(c, MATROSKA_ID_TIMECODESCALE, w->timescale)); // TimecodeScale
