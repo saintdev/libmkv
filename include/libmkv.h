@@ -96,13 +96,15 @@ extern "C" {
 #define MK_SUBTITLE_VOBSUB "S_VOBSUB"
 #define MK_SUBTITLE_BMP    "S_IMAGE/BMP"
 
-#define MK_TRACK_VIDEO     0x01
-#define MK_TRACK_AUDIO     0x02
-#define MK_TRACK_COMPLEX   0x03
-#define MK_TRACK_LOGO      0x10
-#define MK_TRACK_SUBTITLE  0x11
-#define MK_TRACK_BUTTONS   0x12
-#define MK_TRACK_CONTROL   0x20
+typedef enum {
+    MK_TRACK_VIDEO    = 0x01,
+    MK_TRACK_AUDIO    = 0x02,
+    MK_TRACK_COMPLEX  = 0x03,
+    MK_TRACK_LOGO     = 0x10,
+    MK_TRACK_SUBTITLE = 0x11,
+    MK_TRACK_BUTTONS  = 0x12,
+    MK_TRACK_CONTROL  = 0x20
+} mk_TrackType;
 
 typedef enum mk_LacingTypesEnum {
     MK_LACING_NONE = 0x00,
@@ -117,7 +119,7 @@ typedef struct mk_TrackConfig_s mk_TrackConfig;
 
 struct mk_TrackConfig_s {
   uint64_t    trackUID;            // Optional: Unique identifier for the track.
-  uint8_t     trackType;           // Required: 1 = Video, 2 = Audio.
+  mk_TrackType trackType;           // Required: 1 = Video, 2 = Audio.
   int8_t      flagEnabled;         // Required: Set 1 if the track is used, 0 if unused. (Default: enabled)
   int8_t      flagDefault;         // Required: Set 1 if this track is default, 0 if not default, -1 is undefined.
   int8_t      flagForced;          // Optional: Set 1 if the track MUST be shown during playback (Default: disabled)

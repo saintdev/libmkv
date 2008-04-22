@@ -245,7 +245,7 @@ struct mk_Track_s {
   int64_t         max_frame_tc;
   uint8_t         in_frame;
   uint64_t        default_duration;
-  uint8_t         track_type;
+  mk_TrackType    track_type;
   int64_t        prev_cue_pos;
 
   struct {
