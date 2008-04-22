@@ -72,10 +72,12 @@
 #define MK_TRACK_BUTTONS   0x12
 #define MK_TRACK_CONTROL   0x20
 
-#define MK_LACING_NONE     0x00
-#define MK_LACING_XIPH     0x01
-#define MK_LACING_FIXED    0x02
-#define MK_LACING_EBML     0x03
+typedef enum mk_LacingTypesEnum {
+    MK_LACING_NONE = 0x00,
+    MK_LACING_XIPH,
+    MK_LACING_FIXED,
+    MK_LACING_EBML
+} mk_LacingTypes;
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,7 +129,7 @@ int  mk_writeHeader(mk_Writer *w, const char *writingApp);
 int  mk_startFrame( mk_Writer *w, mk_Track *track );
 int  mk_addFrameData(mk_Writer *w, mk_Track *track, const void *data, unsigned size);
 int  mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp, unsigned keyframe);
-int   mk_setFrameLacing(mk_Writer *w, mk_Track *track, uint8_t lacing, uint8_t num_frames, uint64_t sizes[]);
+int  mk_setFrameLacing(mk_Writer *w, mk_Track *track, mk_LacingTypes lacing, uint8_t num_frames, uint64_t sizes[]);
 int  mk_createChapterSimple(mk_Writer *w, uint64_t start, uint64_t end, char *name);
 int  mk_close( mk_Writer *w );
 

@@ -252,7 +252,7 @@ struct mk_Track_s {
     mk_Context    *data;
     int64_t       timecode;
     uint8_t       keyframe;
-    uint8_t       lacing;
+    mk_LacingTypes lacing;
     uint8_t       lacing_num_frames;
     uint64_t      *lacing_sizes;
   } frame;
