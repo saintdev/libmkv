@@ -25,30 +25,15 @@
 #define _MATROSKA_H 1
 
 #include "md5.h"
+#include "ebml.h"
 
 #define CLSIZE    1048576
 #define CHECK(x)  do { if ((x) < 0) return -1; } while (0)
 
-/* Copied from ffmpeg */
-/* EBML version supported */
-#define EBML_VERSION 1
+/* Matroska version supported */
 #define MATROSKA_VERSION 2
 
-/* top-level master-IDs */
-#define EBML_ID_HEADER              0x1A45DFA3      /* sub-elements */
-
-/* IDs in the HEADER master */
-#define EBML_ID_EBMLVERSION         0x4286          /* u-integer */
-#define EBML_ID_EBMLREADVERSION     0x42F7          /* u-integer */
-#define EBML_ID_EBMLMAXIDLENGTH     0x42F2          /* u-integer */
-#define EBML_ID_EBMLMAXSIZELENGTH   0x42F3          /* u-integer */
-#define EBML_ID_DOCTYPE             0x4282          /* string */
-#define EBML_ID_DOCTYPEVERSION      0x4287          /* u-integer */
-#define EBML_ID_DOCTYPEREADVERSION  0x4285          /* u-integer */
-
-/* general EBML types */
-#define EBML_ID_VOID                0xEC            /* binary */
-
+/* Copied from ffmpeg */
 /*
  * Matroska element IDs. max. 32-bit.
  */
@@ -200,18 +185,8 @@
 #define MATROSKA_ID_CHAPPROCESSTIME 0x6922          /* u-integer */
 #define MATROSKA_ID_CHAPPROCESSDATA 0x6933          /* binary */
 
-typedef struct mk_Context_s mk_Context;
 typedef struct mk_Seek_s mk_Seek;
 typedef struct mk_Chapter_s mk_Chapter;
-
-struct mk_Context_s {
-    mk_Context *next, **prev, *parent;
-    mk_Writer  *owner;
-    unsigned      id;
-
-    void          *data;
-    unsigned      d_cur, d_max;
-};
 
 struct mk_Writer_s {
   FILE            *fp;
@@ -282,28 +257,6 @@ struct mk_Track_s {
     uint64_t      *lacing_sizes;
   } frame;
 };
-
-/* EBML */
-mk_Context *mk_createContext(mk_Writer *w, mk_Context *parent, unsigned id);
-int         mk_appendContextData(mk_Context *c, const void *data, uint64_t size);
-int         mk_writeID(mk_Context *c, unsigned id);
-int         mk_writeSize(mk_Context *c, uint64_t size);
-int         mk_writeSSize(mk_Context *c, int64_t size);
-int         mk_flushContextID(mk_Context *c);
-int         mk_flushContextData(mk_Context *c);
-int         mk_closeContext(mk_Context *c, int64_t *off);
-void        mk_destroyContexts(mk_Writer *w);
-int         mk_writeStr(mk_Context *c, unsigned id, const char *str);
-int         mk_writeBin(mk_Context *c, unsigned id, const void *data, unsigned size);
-int         mk_writeUInt(mk_Context *c, unsigned id, uint64_t ui);
-int         mk_writeSInt(mk_Context *c, unsigned id, int64_t si);
-int         mk_writeFloatRaw(mk_Context *c, float f);
-int         mk_writeFloat(mk_Context *c, unsigned id, float f);
-int         mk_writeVoid(mk_Context *c, uint64_t length);
-unsigned    mk_ebmlSizeSize(uint64_t s);
-unsigned    mk_ebmlSIntSize(int64_t si);
-int         mk_writeEbmlHeader(mk_Writer *w, const char * doctype, uint64_t doctype_version, uint64_t doctype_readversion );
-/* EBML */
 
 int         mk_writeSeek(mk_Writer *w, mk_Context *c, unsigned seek_id, uint64_t seek_pos);
 int         mk_writeSeekHead(mk_Writer *w, int64_t *pointer);
