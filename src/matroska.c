@@ -541,7 +541,11 @@ int mk_close(mk_Writer *w)
 				ret = -1;
 			if (mk_writeSeekHead(w, NULL) < 0 || mk_flushContextData(w->root) < 0)
 				ret = -1;
-			if (((i + w->segment_ptr) - w->f_pos - 2) > 1)
+			// The conditional below is easier to understand, but incorrect
+			// because f_pos is unsigned and causes the lhs to be evaluated
+			// as an unsigned quantity.
+			// if (((i + w->segment_ptr) - w->f_pos - 2) > 1)
+			if ((i + w->segment_ptr) > (w->f_pos + 3))
 				if (mk_writeVoid(w->root, (i + w->segment_ptr) - w->f_pos - 2) < 0
 					|| mk_flushContextData(w->root) < 0)
 					ret = -1;
