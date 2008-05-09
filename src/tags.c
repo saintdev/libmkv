@@ -2,9 +2,8 @@
  * tags.c:
  *****************************************************************************
  * Copyright (C) 2007 libmkv
- * $Id: $
  *
- * Authors: Nathan Caldwell
+ * Authors: John A. Stebbins
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,33 +23,32 @@
 #include "libmkv.h"
 #include "matroska.h"
 
-int   mk_createStringTag(mk_Writer *w, char *tag_id, char *value)
+int mk_createStringTag(mk_Writer * w, char *tag_id, char *value)
 {
-  mk_Context *tag, *simple;
+	mk_Context *tag, *simple;
 
-  if (w->tags == NULL)
-  {
-    if ((w->tags = mk_createContext(w, w->root, 0x1254c367)) == NULL) // Tags
-      return -1;
-  }
-  if ((tag = mk_createContext(w, w->tags, 0x7373)) == NULL) // Tag
-    return -1;
-  if ((simple = mk_createContext(w, tag, 0x67c8)) == NULL) // A simple tag
-    return -1;
+	if (w->tags == NULL) {
+		if ((w->tags = mk_createContext(w, w->root, 0x1254c367)) == NULL)	// Tags
+			return -1;
+	}
+	if ((tag = mk_createContext(w, w->tags, 0x7373)) == NULL)	// Tag
+		return -1;
+	if ((simple = mk_createContext(w, tag, 0x67c8)) == NULL)	// A simple tag
+		return -1;
 
-  CHECK(mk_writeStr(simple, 0x45a3, tag_id));	/* TagName */
-  CHECK(mk_writeStr(simple, 0x4487, value));	/* TagString */
-  CHECK(mk_closeContext(simple, 0));
-  CHECK(mk_closeContext(tag, 0));
+	CHECK(mk_writeStr(simple, 0x45a3, tag_id));	/* TagName */
+	CHECK(mk_writeStr(simple, 0x4487, value));	/* TagString */
+	CHECK(mk_closeContext(simple, 0));
+	CHECK(mk_closeContext(tag, 0));
 
-  return 0;
+	return 0;
 }
 
-int   mk_writeTags(mk_Writer *w) 
+int mk_writeTags(mk_Writer * w)
 {
-  if (w->tags == NULL)
-    return -1;
-  CHECK(mk_closeContext(w->tags, 0));
+	if (w->tags == NULL)
+		return -1;
+	CHECK(mk_closeContext(w->tags, 0));
 
-  return 0;
+	return 0;
 }
