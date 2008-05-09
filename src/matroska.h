@@ -201,6 +201,7 @@ struct mk_Writer_s {
 	mk_Context *freelist;
 	mk_Context *actlist;
 	mk_Context *chapters;
+	mk_Context *tags;
 	mk_Context *edition_entry;
 	mk_Context *tracks;
 	mk_Context *cues;

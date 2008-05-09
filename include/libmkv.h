@@ -188,6 +188,9 @@ int mk_close(mk_Writer *w);
 char *mk_laceXiph(uint64_t *sizes, uint8_t num_frames,
 				  uint64_t *output_size);
 
+int   mk_createStringTag(mk_Writer *w, char *tag_id, char *value);
+int   mk_writeTags(mk_Writer *w);
+
 #ifdef __cplusplus
 }
 #endif							/* __cplusplus */
