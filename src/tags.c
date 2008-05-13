@@ -23,7 +23,7 @@
 #include "libmkv.h"
 #include "matroska.h"
 
-int mk_createStringTag(mk_Writer * w, char *tag_id, char *value)
+int mk_createTagSimple(mk_Writer * w, char *tag_id, char *value)
 {
 	mk_Context *simple;
 
