@@ -28,16 +28,19 @@ int mk_createStringTag(mk_Writer * w, char *tag_id, char *value)
 	mk_Context *tag, *simple;
 
 	if (w->tags == NULL) {
-		if ((w->tags = mk_createContext(w, w->root, 0x1254c367)) == NULL)	// Tags
+		/* Tags */
+		if ((w->tags = mk_createContext(w, w->root, MATROSKA_ID_TAGS)) == NULL)
 			return -1;
 	}
-	if ((tag = mk_createContext(w, w->tags, 0x7373)) == NULL)	// Tag
+	/* Tag */
+	if ((tag = mk_createContext(w, w->tags, MATROSKA_ID_TAG)) == NULL)
 		return -1;
-	if ((simple = mk_createContext(w, tag, 0x67c8)) == NULL)	// A simple tag
+	/* SimpleTag */
+	if ((simple = mk_createContext(w, tag, MATROSKA_ID_SIMPLETAG)) == NULL)
 		return -1;
 
-	CHECK(mk_writeStr(simple, 0x45a3, tag_id));	/* TagName */
-	CHECK(mk_writeStr(simple, 0x4487, value));	/* TagString */
+	CHECK(mk_writeStr(simple, MATROSKA_ID_TAGNAME, tag_id));	/* TagName */
+	CHECK(mk_writeStr(simple, MATROSKA_ID_TAGSTRING, value));	/* TagString */
 	CHECK(mk_closeContext(simple, 0));
 	CHECK(mk_closeContext(tag, 0));
 

@@ -116,9 +116,6 @@
 #define MATROSKA_ID_CUECLUSTERPOSITION 0xF1		/* u-integer */
 #define MATROSKA_ID_CUEBLOCKNUMBER	   0x5378	/* u-integer */
 
-/* IDs in the tags master */
-/* TODO */
-
 /* IDs in the seekhead master */
 #define MATROSKA_ID_SEEKENTRY		0x4DBB	/* sub-elements */
 
@@ -143,6 +140,28 @@
 #define MATROSKA_ID_FILEDATA		0x465C	/* binary */
 #define MATROSKA_ID_FILEUID			0x46AE	/* u-integer */
 /* Above copied from ffmpeg */
+
+/* IDs in the tags master */
+#define MATROSKA_ID_TAG				0x7373	/* sub-elements */
+
+/* IDs in the tag master */
+#define MATROSKA_ID_TARGETS			0x63C0	/* sub-elements */
+#define MATROSKA_ID_SIMPLETAG		0x67C8	/* sub-elements */
+
+/* IDs in the targets master */
+#define MATROSKA_ID_TARGETTYPEVALUE		0x68CA	/* u-integer */
+#define MATROSKA_ID_TARGETTYPE			0x63CA	/* string */
+#define MATROSKA_ID_TARGETTRACKUID		0x63C5	/* u-integer */
+#define MATROSKA_ID_TARGETEDITIONUID	0x63C9	/* u-integer */
+#define MATROSKA_ID_TARGETCHAPTERUID	0x63C4	/* u-integer */
+#define MATROSKA_ID_TARGETATTACHMENTUID	0x63C6	/* u-integer */
+
+/* IDs in the simple tag master */
+#define MATROSKA_ID_TAGNAME			0x45A3	/* UTF-8 */
+#define MATROSKA_ID_TAGLANGUAGE		0x447A	/* string */
+#define MATROSKA_ID_TAGDEFAULT		0x4484	/* u-integer (1-bit)) */
+#define MATROSKA_ID_TAGSTRING		0x4487	/* UTF-8 */
+#define MATROSKA_ID_TAGBINARY		0x4485	/* binary */
 
 /* IDs in the chapters master */
 #define MATROSKA_ID_EDITIONENTRY	0x45B9	/* sub-elements */
