@@ -201,7 +201,12 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 		return 0;
 
 	delta = track->frame.timecode / w->timescale - w->cluster.tc_scaled;
-	if (delta > 2000ll || delta < -2000ll)
+	/* If switch rapidly back-and-forth between tracks with drastically different timecodes
+	 * this causes a new cluster to be written each time a switch is made. This causes
+	 * unnecessary overhead.
+	 */
+
+	if (delta > 20000ll || delta < -20000ll)
 		CHECK(mk_closeCluster(w));
 
 	if (w->cluster.context == NULL) {
@@ -331,7 +336,8 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 	track->in_frame = 0;
 	track->prev_frame_tc_scaled = w->cluster.tc_scaled + delta;
 
-	if (w->cluster.context->d_cur > CLSIZE)
+	/* Write a new Cluster ~ every 5MB */
+	if (w->cluster.context->d_cur > 5 * CLSIZE)
 		CHECK(mk_closeCluster(w));
 
 	return 0;
