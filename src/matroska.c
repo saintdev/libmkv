@@ -493,7 +493,7 @@ int mk_close(mk_Writer *w)
 		if (w->vlc_compat) {
 			if (mk_flushContextData(w->root) < 0)
 				ret = -1;
-			if (mk_seekFile(w, w->segment_ptr + 0x100 + 3) < 0)
+			if (mk_seekFile(w, w->segment_ptr + RESERVED_SEEKHEAD + 3) < 0)
 				ret = -1;
 		}
 		w->seek_data.chapters = w->f_pos - w->segment_ptr;
@@ -501,7 +501,7 @@ int mk_close(mk_Writer *w)
 		if (mk_flushContextData(w->root) < 0)
 			ret = -1;
 		if (w->vlc_compat) {
-			if (mk_writeVoid(w->root, (0x800 - (w->f_pos - w->segment_ptr - 0x100 - 3))) < 0)
+			if (mk_writeVoid(w->root, (RESERVED_CHAPTERS - (w->f_pos - w->segment_ptr - RESERVED_SEEKHEAD - 3))) < 0)
 				ret = -1;
 			if (mk_flushContextData(w->root) < 0)
 				ret = -1;
@@ -528,7 +528,7 @@ int mk_close(mk_Writer *w)
 		if (w->vlc_compat) {
 			if (mk_flushContextData(w->root) < 0)
 				ret = -1;
-			if (mk_writeVoid(w->root, (0x100 - (w->f_pos - w->segment_ptr))) < 0)
+			if (mk_writeVoid(w->root, (RESERVED_SEEKHEAD - (w->f_pos - w->segment_ptr))) < 0)
 				ret = -1;
 		}
 
