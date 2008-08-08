@@ -99,14 +99,12 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 		return NULL;
 	}
 
-	if (vlc_compat) {
-		/* SeekHead */
-		if ((w->cluster.seekhead = mk_createContext(w, w->root, MATROSKA_ID_SEEKHEAD)) == NULL)
-		{
-			mk_destroyContexts(w);
-			free(w);
-			return NULL;
-		}
+	/* Clusters SeekHead */
+	if ((w->cluster.seekhead = mk_createContext(w, w->root, MATROSKA_ID_SEEKHEAD)) == NULL)
+	{
+		mk_destroyContexts(w);
+		free(w);
+		return NULL;
 	}
 
 	w->fp = fopen(filename, "wb");
@@ -218,11 +216,9 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 
 		w->cluster.pointer = w->f_pos - w->segment_ptr;
 
-		if (w->vlc_compat) {
-			/* Cluster SeekEntry */
-			CHECK(mk_writeSeek(w, w->cluster.seekhead, MATROSKA_ID_CLUSTER,
-							   w->cluster.pointer));
-		}
+		/* Cluster SeekEntry */
+		CHECK(mk_writeSeek(w, w->cluster.seekhead, MATROSKA_ID_CLUSTER,
+						   w->cluster.pointer));
 
 		/* Cluster Timecode */
 		CHECK(mk_writeUInt(w->cluster.context, MATROSKA_ID_CLUSTERTIMECODE, w->cluster.tc_scaled));
@@ -481,7 +477,7 @@ int mk_close(mk_Writer *w)
 	if (mk_flushContextData(w->root) < 0)
 		ret = -1;
 
-	if (w->vlc_compat && w->cluster.seekhead) {
+	if (w->cluster.seekhead) {
 		w->seek_data.seekhead = w->f_pos - w->segment_ptr;
 		if (mk_closeContext(w->cluster.seekhead, 0) < 0)
 			ret = -1;
