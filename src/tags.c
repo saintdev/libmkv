@@ -23,9 +23,9 @@
 #include "libmkv.h"
 #include "matroska.h"
 
-int mk_createTagSimple(mk_Writer * w, char *tag_id, char *value)
+int mk_initTags(mk_Writer *w)
 {
-	mk_Context *simple, *targets;
+	mk_Context *targets;
 
 	if (w->tags == NULL) {
 		/* Tags */
@@ -41,6 +41,16 @@ int mk_createTagSimple(mk_Writer * w, char *tag_id, char *value)
 		CHECK(mk_writeUInt(targets, MATROSKA_ID_TARGETTYPEVALUE, MK_TARGETTYPE_MOVIE));	/* Album/Movie/Episode */
 		CHECK(mk_closeContext(targets, 0));
 	}
+
+	return 0;
+}
+
+int mk_createTagSimple(mk_Writer * w, char *tag_id, char *value)
+{
+	mk_Context *simple;
+
+	CHECK(mk_initTags(w));
+
 	/* SimpleTag */
 	if ((simple = mk_createContext(w, w->tag, MATROSKA_ID_SIMPLETAG)) == NULL)
 		return -1;
@@ -54,22 +64,10 @@ int mk_createTagSimple(mk_Writer * w, char *tag_id, char *value)
 
 int mk_createTagSimpleBin(mk_Writer * w, char *tag_id, const void *data, unsigned size)
 {
-	mk_Context *simple, *targets;
-
-	if (w->tags == NULL) {
-		/* Tags */
-		if ((w->tags = mk_createContext(w, w->root, MATROSKA_ID_TAGS)) == NULL)
-			return -1;
-		/* Tag */
-		if ((w->tag = mk_createContext(w, w->tags, MATROSKA_ID_TAG)) == NULL)
-			return -1;
-		/* Targets */
-		if ((targets = mk_createContext(w, w->tag, MATROSKA_ID_TARGETS)) == NULL)
-			return -1;
-		/* TargetTypeValue */
-		CHECK(mk_writeUInt(targets, MATROSKA_ID_TARGETTYPEVALUE, MK_TARGETTYPE_MOVIE));	/* Album/Movie/Episode */
-		CHECK(mk_closeContext(targets, 0));
-	}
+	mk_Context *simple;
+	
+	CHECK(mk_initTags(w));
+	
 	/* SimpleTag */
 	if ((simple = mk_createContext(w, w->tag, MATROSKA_ID_SIMPLETAG)) == NULL)
 		return -1;
