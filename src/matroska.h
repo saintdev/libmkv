@@ -283,6 +283,7 @@ int mk_writeSeek(mk_Writer *w, mk_Context *c, unsigned seek_id,
 int mk_writeSeekHead(mk_Writer *w, int64_t *pointer);
 int mk_writeTracks(mk_Writer *w, mk_Context *tracks);
 int mk_writeChapters(mk_Writer *w);
+int mk_writeTags(mk_Writer *w);
 int mk_seekFile(mk_Writer *w, uint64_t pos);
 
 #endif

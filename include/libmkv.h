@@ -233,7 +233,6 @@ char *mk_laceXiph(uint64_t *sizes, uint8_t num_frames,
 				  uint64_t *output_size);
 
 int mk_createTagSimple(mk_Writer *w, char *tag_id, char *value);
-int   mk_writeTags(mk_Writer *w);
 
 #ifdef __cplusplus
 }
