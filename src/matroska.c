@@ -484,6 +484,13 @@ int mk_close(mk_Writer *w)
 		if (mk_flushContextData(w->root) < 0)
 			ret = -1;
 	}
+	
+	if (w->tags != NULL) {
+		w->seek_data.tags = w->f_pos - w->segment_ptr;
+		mk_writeTags(w);
+		if (mk_flushContextData(w->root) < 0)
+			ret = -1;
+	}
 
 	if (w->chapters != NULL) {
 		if (w->vlc_compat) {
@@ -502,13 +509,6 @@ int mk_close(mk_Writer *w)
 			if (mk_flushContextData(w->root) < 0)
 				ret = -1;
 		}
-	}
-
-	if (w->tags != NULL) {
-		w->seek_data.tags = w->f_pos - w->segment_ptr;
-		mk_writeTags(w);
-		if (mk_flushContextData(w->root) < 0)
-			ret = -1;
 	}
 
 	if (w->wrote_header) {
