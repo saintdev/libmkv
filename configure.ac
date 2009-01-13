@@ -5,6 +5,7 @@ AC_PREREQ(2.61)
 AC_INIT(libmkv, 0.6.3.1, saintdev@gmail.com)
 
 AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_SRCDIR([include/libmkv.h])
 AC_CONFIG_HEADER([config.h])
