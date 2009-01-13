@@ -235,6 +235,8 @@ char *mk_laceXiph(uint64_t *sizes, uint8_t num_frames,
 int mk_createTagSimple(mk_Writer *w, char *tag_id, char *value);
 int mk_createTagSimpleBin(mk_Writer *w, char *tag_id, const void *data, 
 						  unsigned size);
+int mk_createAttachment( mk_Writer * w, char *name, char *description, 
+						 char *mime, const void *data, unsigned size);
 
 #ifdef __cplusplus
 }
