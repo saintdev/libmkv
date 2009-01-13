@@ -51,8 +51,10 @@ int mk_createAttachment(
 
 	/* FileName */
 	CHECK(mk_writeStr(attach, MATROSKA_ID_FILENAME, name));
-	/* FileName */
-	CHECK(mk_writeStr(attach, MATROSKA_ID_FILEDESCRIPTION, description));
+	if ((description != NULL) && (strlen(description) > 0)) {
+		/* FileDescription */
+		CHECK(mk_writeStr(attach, MATROSKA_ID_FILEDESCRIPTION, description));
+	}
 	/* FileMimeType */
 	CHECK(mk_writeStr(attach, MATROSKA_ID_FILEMIMETYPE, mime));
 	/* FileUID */
