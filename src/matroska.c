@@ -90,6 +90,7 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 		free(w);
 		return NULL;
 	}
+printf("att %p\n", w->attachments);
 
 	/* Cues */
 	if ((w->cues = mk_createContext(w, w->root, MATROSKA_ID_CUES)) == NULL)
@@ -485,6 +486,13 @@ int mk_close(mk_Writer *w)
 			ret = -1;
 	}
 	
+	if (w->attachments != NULL) {
+		w->seek_data.attachments = w->f_pos - w->segment_ptr;
+		mk_writeAttachments(w);
+		if (mk_flushContextData(w->root) < 0)
+			ret = -1;
+	}
+
 	if (w->tags != NULL) {
 		w->seek_data.tags = w->f_pos - w->segment_ptr;
 		mk_writeTags(w);
