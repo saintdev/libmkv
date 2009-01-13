@@ -90,7 +90,6 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 		free(w);
 		return NULL;
 	}
-printf("att %p\n", w->attachments);
 
 	/* Cues */
 	if ((w->cues = mk_createContext(w, w->root, MATROSKA_ID_CUES)) == NULL)
