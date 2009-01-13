@@ -33,6 +33,10 @@ int mk_createAttachment(
 {
 	mk_Context *attach;
 	unsigned long file_uid;
+
+	if ((data == NULL) || (size == 0))
+		return -1;
+	
 	/*
 	 * Generate a random UID for this Attachment.
 	 * NOTE: This probably should be a CRC32 of file data.
