@@ -25,6 +25,8 @@
 #include "matroska.h"
 #include "md5.h"
 
+#include <sys/time.h>
+
 #define RESERVED_SEEKHEAD 0x100
 /* 256 bytes should be enough room for our Seek entries. */
 #define RESERVED_CHAPTERS 0x800
@@ -82,6 +84,8 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 						   uint8_t vlc_compat)
 {
 	mk_Writer *w = calloc(1, sizeof(*w));
+	struct timeval tv;
+
 	if (w == NULL)
 		return NULL;
 
@@ -113,6 +117,9 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 		free(w);
 		return NULL;
 	}
+
+	gettimeofday( &tv, NULL );
+	srandom(tv.tv_sec ^ tv.tv_usec);
 
 	w->timescale = timescale;
 	w->vlc_compat = vlc_compat;
