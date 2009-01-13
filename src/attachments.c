@@ -40,18 +40,14 @@ int mk_createAttachment(
 	 */
 	file_uid = random();
 
-printf("2att %p\n", w->attachments);
 	if (w->attachments == NULL) {
-printf("create attachments context\n");
 		/* Attachments */
 		if ((w->attachments = mk_createContext(w, w->root, MATROSKA_ID_ATTACHMENTS)) == NULL)
 			return -1;
 	}
 	/* AttachedFile */
-printf("create attachedfile context\n");
 	if ((attach = mk_createContext(w, w->attachments, MATROSKA_ID_ATTACHEDFILE)) == NULL)
 		return -1;
-printf("done attachedfile context\n");
 
 	/* FileName */
 	CHECK(mk_writeStr(attach, MATROSKA_ID_FILENAME, name));
