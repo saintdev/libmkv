@@ -29,8 +29,8 @@
 
 #define RESERVED_SEEKHEAD 0x100
 /* 256 bytes should be enough room for our Seek entries. */
-#define RESERVED_CHAPTERS 0x800
-/* 2048 bytes, hopefully enough for Chapters. */
+#define RESERVED_CHAPTERS 0x1000
+/* 4096 bytes, hopefully enough for Chapters. */
 
 int mk_seekFile(mk_Writer *w, uint64_t pos)
 {
