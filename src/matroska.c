@@ -263,6 +263,10 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 		ref = track->prev_frame_tc_scaled - w->cluster.tc_scaled - delta;
 		bgsize += 1 + 1 + mk_ebmlSIntSize(ref);
 	}
+	if (track->frame.duration > 0)	/* BlockDuration */
+	{
+		bgsize += 1 + 1 + mk_ebmlUIntSize(track->frame.duration);
+	}
 
 	CHECK(mk_writeID(w->cluster.context, MATROSKA_ID_BLOCKGROUP));	/* BlockGroup */
 	CHECK(mk_writeSize(w->cluster.context, bgsize));
