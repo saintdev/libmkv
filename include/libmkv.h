@@ -218,10 +218,11 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc);
 int mk_writeHeader(mk_Writer *w, const char *writingApp);
 int mk_startFrame(mk_Writer *w, mk_Track *track);
+int mk_flushFrame(mk_Writer *w, mk_Track *track);
 int mk_addFrameData(mk_Writer * w, mk_Track *track, const void *data,
 					unsigned size);
 int mk_setFrameFlags(mk_Writer * w, mk_Track *track, int64_t timestamp,
-					 unsigned keyframe);
+					 unsigned keyframe, uint64_t duration);
 int mk_setFrameLacing(mk_Writer *w, mk_Track * track,
 					  mk_LacingType lacing, uint8_t num_frames,
 					  uint64_t sizes[]);

@@ -385,3 +385,16 @@ unsigned mk_ebmlSIntSize(int64_t si)
 
 	return 8 - i;
 }
+
+unsigned mk_ebmlUIntSize(uint64_t ui)
+{
+	unsigned char c_ui[8] = { ui >> 56, ui >> 48, ui >> 40, ui >> 32,
+							  ui >> 24, ui >> 16, ui >> 8, ui };
+	unsigned i = 0;
+
+	while (i < 7 && c_ui[i] == 0)
+		++i;
+
+	return 8 - i;
+}
+

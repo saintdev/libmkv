@@ -78,6 +78,7 @@ int mk_writeFloat(mk_Context *c, unsigned id, float f);
 int mk_writeVoid(mk_Context *c, uint64_t length);
 unsigned mk_ebmlSizeSize(uint64_t s);
 unsigned mk_ebmlSIntSize(int64_t si);
+unsigned mk_ebmlUIntSize(uint64_t ui);
 int mk_writeEbmlHeader(mk_Writer *w, const char *doctype,
 					   uint64_t doctype_version,
 					   uint64_t doctype_readversion);

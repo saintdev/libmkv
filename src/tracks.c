@@ -161,6 +161,8 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 				if (mk_writeUInt(v, MATROSKA_ID_VIDEOASPECTRATIOTYPE, tc->extra.video.aspectRatioType) < 0)
 					return NULL;
 			}
+			if (mk_closeContext(v, 0) < 0)
+				return NULL;
 			break;
 		case MK_TRACK_AUDIO:
 			/* Audio */
@@ -177,6 +179,11 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 				if (mk_writeUInt(v, MATROSKA_ID_AUDIOBITDEPTH, tc->extra.audio.bitDepth) < 0)
 					return NULL;
 			}
+			if (mk_closeContext(v, 0) < 0)
+				return NULL;
+			break;
+		case MK_TRACK_SUBTITLE:
+			/* Subtitles */
 			break;
 		default:				/* Other track types
 								 * TODO: Implement other valid track types.
@@ -184,8 +191,6 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 			return NULL;
 	}
 
-	if (mk_closeContext(v, 0) < 0)
-		return NULL;
 	if (mk_closeContext(ti, 0) < 0)
 		return NULL;
 

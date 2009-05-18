@@ -201,11 +201,13 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 	int i;
 	char *laced = NULL;
 	uint64_t length = 0;
+	uint64_t block_duration = 0;
 
 	if (!track->in_frame)
 		return 0;
 
 	delta = track->frame.timecode / w->timescale - w->cluster.tc_scaled;
+	block_duration = track->frame.duration / w->timescale;
 	/* If switch rapidly back-and-forth between tracks with drastically different timecodes
 	 * this causes a new cluster to be written each time a switch is made. This causes
 	 * unnecessary overhead.
@@ -270,6 +272,10 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 		ref = track->prev_frame_tc_scaled - w->cluster.tc_scaled - delta;
 		bgsize += 1 + 1 + mk_ebmlSIntSize(ref);
 	}
+	if (block_duration > 0)	/* BlockDuration */
+	{
+		bgsize += 1 + 1 + mk_ebmlUIntSize(block_duration);
+	}
 
 	CHECK(mk_writeID(w->cluster.context, MATROSKA_ID_BLOCKGROUP));	/* BlockGroup */
 	CHECK(mk_writeSize(w->cluster.context, bgsize));
@@ -309,9 +315,11 @@ int mk_flushFrame(mk_Writer *w, mk_Track *track)
 								   track->frame.data->d_cur));
 		track->frame.data->d_cur = 0;
 	}
-	if (!track->frame.keyframe)
-		/* ReferenceBlock */
+	if (!track->frame.keyframe)		/* ReferenceBlock */
 		CHECK(mk_writeSInt(w->cluster.context, MATROSKA_ID_REFERENCEBLOCK, ref));
+
+	if (block_duration > 0)	/* BlockDuration */
+		CHECK(mk_writeUInt(w->cluster.context, 0x9b, block_duration));
 
 	/* This may get a little out of hand, but it seems sane enough for now. */
 	if (track->frame.keyframe && (track->track_type == MK_TRACK_VIDEO)) {
@@ -361,7 +369,7 @@ int mk_startFrame(mk_Writer *w, mk_Track *track)
 }
 
 int mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp,
-					 unsigned keyframe)
+					 unsigned keyframe, uint64_t duration)
 {
 	if (!track->in_frame)
 		return -1;
@@ -371,6 +379,9 @@ int mk_setFrameFlags(mk_Writer *w, mk_Track *track, int64_t timestamp,
 
 	if (track->max_frame_tc < timestamp)
 		track->max_frame_tc = timestamp;
+
+	if (duration > 0)
+		track->frame.duration = duration;
 
 	return 0;
 }
