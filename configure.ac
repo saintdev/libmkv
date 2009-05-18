@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libmkv, 0.6.3.1, saintdev@gmail.com)
+AC_INIT(libmkv, 0.6.4, saintdev@gmail.com)
 
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
