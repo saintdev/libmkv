@@ -171,8 +171,17 @@ int mk_writeHeader(mk_Writer *w, const char *writingApp)
 
 	w->seek_data.tracks = w->root->d_cur - w->segment_ptr;
 
-	if (w->tracks)
-		CHECK(mk_closeContext(w->tracks, 0));
+	if (w->tracks) {
+		mk_Track * tk;
+		int i;
+
+		CHECK(mk_closeContext(w->tracks, &offset));
+		for (i = 0; i < w->num_tracks; i++) {
+			tk = w->tracks_arr[i];
+			if (tk->private_data_size)
+				tk->private_data_ptr += offset;
+		}
+	}
 
 	CHECK(mk_flushContextData(w->root));
 
@@ -487,12 +496,8 @@ int mk_close(mk_Writer *w)
 
 	for (i = w->num_tracks - 1; i >= 0; i--) {
 		tk = w->tracks_arr[i];
-		w->tracks_arr[i] = NULL;
-		--w->num_tracks;
 		if (mk_flushFrame(w, tk) < 0)
 			ret = -1;
-		free(tk);
-		tk = NULL;
 	}
 
 	if (mk_closeCluster(w) < 0)
@@ -609,6 +614,24 @@ int mk_close(mk_Writer *w)
 						sizeof(segment_uid)) < 0 ||
 			mk_flushContextData(w->root) < 0)
 			ret = -1;
+	}
+
+    /* update any track private data that may have changed */
+	for (i = w->num_tracks - 1; i >= 0; i--) {
+		tk = w->tracks_arr[i];
+		if (tk->private_data_size && tk->private_data)
+		{
+			if (mk_seekFile(w, tk->private_data_ptr) < 0)
+				ret = -1;
+			if (mk_writeBin(w->root, MATROSKA_ID_CODECPRIVATE,
+							tk->private_data, tk->private_data_size) < 0 ||
+				mk_flushContextData(w->root) < 0)
+				ret = -1;
+			free(tk->private_data);
+        }
+		w->tracks_arr[i] = NULL;
+		--w->num_tracks;
+		free(tk);
 	}
 
 	if (mk_closeContext(w->root, 0) < 0)

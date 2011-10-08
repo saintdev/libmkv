@@ -216,6 +216,7 @@ struct mk_TrackConfig_s {
 mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 						   uint8_t vlc_compat);
 mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc);
+int mk_updateTrackPrivateData(mk_Writer *w, mk_Track *track, uint8_t * data, int size );
 int mk_writeHeader(mk_Writer *w, const char *writingApp);
 int mk_startFrame(mk_Writer *w, mk_Track *track);
 int mk_flushFrame(mk_Writer *w, mk_Track *track);
