@@ -207,7 +207,8 @@ int mk_updateTrackPrivateData(mk_Writer *w, mk_Track *track, uint8_t * data, int
 	if (size > track->private_data_size)
 		return -1;
 
-	track->private_data = calloc(1, track->private_data_size);
+	if (track->private_data == NULL)
+		track->private_data = calloc(1, track->private_data_size);
 	memcpy(track->private_data, data, size);
 }
 
