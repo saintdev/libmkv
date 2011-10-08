@@ -269,6 +269,9 @@ struct mk_Track_s {
 	uint64_t default_duration;
 	mk_TrackType track_type;
 	int64_t prev_cue_pos;
+	uint8_t *private_data;
+	unsigned private_data_size;
+	int64_t private_data_ptr;
 
 	struct {
 		mk_Context *data;

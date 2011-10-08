@@ -81,6 +81,8 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 		return NULL;
 	if (tc->codecPrivateSize && (tc->codecPrivate != NULL)) {
 		/* CodecPrivate */
+		track->private_data_size = tc->codecPrivateSize;
+		track->private_data_ptr = ti->d_cur;
 		if (mk_writeBin(ti, MATROSKA_ID_CODECPRIVATE, tc->codecPrivate, tc->codecPrivateSize) < 0)
 			return NULL;
 	}
@@ -191,17 +193,40 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 			return NULL;
 	}
 
-	if (mk_closeContext(ti, 0) < 0)
+	int64_t offset = 0;
+	if (mk_closeContext(ti, &offset) < 0)
 		return NULL;
+	track->private_data_ptr += offset;
 
 	return track;
 }
 
+int mk_updateTrackPrivateData(mk_Writer *w, mk_Track *track, uint8_t * data, int size )
+{
+	/* can not write data larger than was previously reserved */
+	if (size > track->private_data_size)
+		return -1;
+
+	if (track->private_data == NULL)
+		track->private_data = calloc(1, track->private_data_size);
+	memcpy(track->private_data, data, size);
+}
+
 int mk_writeTracks(mk_Writer *w, mk_Context *tracks)
 {
+	int i;
+	mk_Track * tk;
+	int64_t offset = 0;
+
 	w->seek_data.tracks = w->root->d_cur;
 
-	CHECK(mk_closeContext(w->tracks, 0));
+	CHECK(mk_closeContext(w->tracks, &offset));
+
+	for (i = 0; i < w->num_tracks; i++) {
+		tk = w->tracks_arr[i];
+		if (tk->private_data_size)
+			tk->private_data_ptr += offset;
+	}
 
 	return 0;
 }
