@@ -130,6 +130,8 @@ mk_Writer *mk_createWriter(const char *filename, int64_t timescale,
 int mk_writeHeader(mk_Writer *w, const char *writingApp)
 {
 	mk_Context *c;
+	mk_Track *tk;
+	int i;
 	int64_t offset = 0;
 
 	if (w->wrote_header)
@@ -172,9 +174,6 @@ int mk_writeHeader(mk_Writer *w, const char *writingApp)
 	w->seek_data.tracks = w->root->d_cur - w->segment_ptr;
 
 	if (w->tracks) {
-		mk_Track * tk;
-		int i;
-
 		CHECK(mk_closeContext(w->tracks, &offset));
 		for (i = 0; i < w->num_tracks; i++) {
 			tk = w->tracks_arr[i];

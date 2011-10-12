@@ -32,6 +32,7 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 {
 	mk_Context *ti, *v;
 	int i;
+	int64_t offset = 0;
 	mk_Track *track = calloc(1, sizeof(*track));
 	if (track == NULL)
 		return NULL;
@@ -193,7 +194,6 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 			return NULL;
 	}
 
-	int64_t offset = 0;
 	if (mk_closeContext(ti, &offset) < 0)
 		return NULL;
 	track->private_data_ptr += offset;
