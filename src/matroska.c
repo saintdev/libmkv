@@ -174,6 +174,7 @@ int mk_writeHeader(mk_Writer *w, const char *writingApp)
 	w->seek_data.tracks = w->root->d_cur - w->segment_ptr;
 
 	if (w->tracks) {
+		offset = 0;
 		CHECK(mk_closeContext(w->tracks, &offset));
 		for (i = 0; i < w->num_tracks; i++) {
 			tk = w->tracks_arr[i];
