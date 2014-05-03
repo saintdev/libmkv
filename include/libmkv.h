@@ -204,6 +204,7 @@ struct mk_TrackConfig_s {
 		} video;
 		struct {
 			float samplingFreq;	/* Sampling Frequency in Hz */
+			float outputSamplingFreq;	/* Playback Sampling Frequency in Hz (e.g. for AAC w/SBR) */
 			unsigned channels;	/* Number of channels for this track */
 			unsigned bitDepth;	/* Bits per sample (PCM) */
 		} audio;
