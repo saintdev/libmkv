@@ -27,6 +27,11 @@
 
 #include <sys/time.h>
 
+#if defined( __MINGW32__ )
+#undef fseeko
+#define fseeko fseeko64
+#endif
+
 #define RESERVED_SEEKHEAD 0x100
 /* 256 bytes should be enough room for our Seek entries. */
 #define RESERVED_CHAPTERS 0x1000
@@ -34,7 +39,7 @@
 
 int mk_seekFile(mk_Writer *w, uint64_t pos)
 {
-	if (fseek(w->fp, pos, SEEK_SET))
+	if (fseeko(w->fp, pos, SEEK_SET))
 		return -1;
 
 	w->f_pos = pos;

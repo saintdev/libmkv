@@ -94,6 +94,7 @@ extern "C" {
 #define MK_SUBTITLE_USF    "S_TEXT/USF"
 #define MK_SUBTITLE_VOBSUB "S_VOBSUB"
 #define MK_SUBTITLE_BMP    "S_IMAGE/BMP"
+#define MK_SUBTITLE_PGS    "S_HDMV/PGS"
 
 /* Official Tags */
 #define MK_TAG_TITLE		"TITLE"
@@ -203,6 +204,7 @@ struct mk_TrackConfig_s {
 		} video;
 		struct {
 			float samplingFreq;	/* Sampling Frequency in Hz */
+			float outputSamplingFreq;	/* Playback Sampling Frequency in Hz (e.g. for AAC w/SBR) */
 			unsigned channels;	/* Number of channels for this track */
 			unsigned bitDepth;	/* Bits per sample (PCM) */
 		} audio;

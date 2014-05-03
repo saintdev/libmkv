@@ -174,6 +174,11 @@ mk_Track *mk_createTrack(mk_Writer *w, mk_TrackConfig *tc)
 			/* SamplingFrequency */
 			if (mk_writeFloat(v, MATROSKA_ID_AUDIOSAMPLINGFREQ, tc->extra.audio.samplingFreq) < 0)
 				return NULL;
+			if (tc->extra.audio.outputSamplingFreq) {
+				/* Output SamplingFrequency */
+				if (mk_writeFloat(v, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, tc->extra.audio.outputSamplingFreq) < 0)
+					return NULL;
+			}
 			/* Channels */
 			if (mk_writeUInt(v, MATROSKA_ID_AUDIOCHANNELS, tc->extra.audio.channels) < 0)
 				return NULL;
