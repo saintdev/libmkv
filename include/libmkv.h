@@ -94,6 +94,7 @@ extern "C" {
 #define MK_SUBTITLE_USF    "S_TEXT/USF"
 #define MK_SUBTITLE_VOBSUB "S_VOBSUB"
 #define MK_SUBTITLE_BMP    "S_IMAGE/BMP"
+#define MK_SUBTITLE_PGS    "S_HDMV/PGS"
 
 /* Official Tags */
 #define MK_TAG_TITLE		"TITLE"
